@@ -72,3 +72,21 @@ class DesktopAppVersion(models.Model):
 
     def __str__(self):
         return f"Argus App {self.version_number}"
+
+from datetime import timedelta
+
+class OTPRecord(models.Model):
+    """
+    Stores temporary OTPs during the registration process.
+    """
+    email = models.EmailField(unique=True)
+    username = models.CharField(max_length=150)
+    otp = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def is_valid(self):
+        # OTP expires in 10 minutes
+        return timezone.now() < self.created_at + timedelta(minutes=10)
+        
+    def __str__(self):
+        return f"{self.email} - {self.otp}"

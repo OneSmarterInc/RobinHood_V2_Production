@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Plan, Subscriber, AuthToken, DesktopAppVersion
+from .models import Plan, Subscriber, AuthToken, DesktopAppVersion, OTPRecord
 
 @admin.register(Plan)
 class PlanAdmin(admin.ModelAdmin):
@@ -31,3 +31,5 @@ class DesktopAppVersionAdmin(admin.ModelAdmin):
     list_display = ('version_number', 'is_critical_update', 'released_at', 'download_url')
     list_filter = ('is_critical_update',)
     search_fields = ('version_number',)
+
+admin.site.register(OTPRecord)

@@ -30,10 +30,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-6f3(c%##!8$x*)54^ajya$$j(ril^_r=has@r@uk$i&0sdl2z_'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default-key-for-dev-only')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = []
 
@@ -48,19 +48,31 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     "rest_framework",
+    "rest_framework.authtoken",
     "PublisherApp",
     "SubscriberApp",
+    "django_celery_beat",
+    "corsheaders",
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+CORS_ALLOW_ALL_ORIGINS = True # For development only
 
 ROOT_URLCONF = 'publisher_agent.urls'
 
@@ -94,7 +106,7 @@ WSGI_APPLICATION = 'publisher_agent.wsgi.application'
 #     }
 # }
 
-# It is for Postgresql database************************************
+# # It is for Postgresql database************************************
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -142,3 +154,22 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# CELERY CONFIGURATION
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+
+from celery.schedules import crontab
+CELERY_BEAT_SCHEDULE = {
+    'fetch-market-data-watchdog': {
+        'task': 'PublisherApp.tasks.run_daily_data_fetch',
+        # Runs every 15 minutes between 6:00 AM and 9:00 AM
+        'schedule': crontab(minute='*/15', hour='6-9'), 
+    },
+}
+
+# EMAIL CONFIGURATION (For OTP Verification)
+# Using console backend for development to print OTPs in terminal
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
