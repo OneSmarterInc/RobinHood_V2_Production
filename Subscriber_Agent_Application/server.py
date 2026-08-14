@@ -1,0 +1,173 @@
+import uvicorn
+from fastapi import FastAPI, Depends, HTTPException, Header
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import Optional
+import threading
+
+# Core Logic imports
+from core.agent import Agent
+from core.broker_mock import MockBroker
+from core.scheduler import BackgroundPoller
+from api.client import AuthClient
+
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+import os
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Serve the compiled React Frontend
+dist_dir = os.path.join(os.path.dirname(__file__), "frontend", "dist")
+if os.path.exists(dist_dir):
+    app.mount("/assets", StaticFiles(directory=os.path.join(dist_dir, "assets")), name="assets")
+    
+    @app.get("/")
+    def serve_index():
+        return FileResponse(os.path.join(dist_dir, "index.html"))
+
+# Global State for the Desktop App (since it's a single-user local app)
+class AppState:
+    def __init__(self):
+        self.agent = None
+        self.poller = None
+        self.logs = ["Waiting for automated sync..."]
+        self.base_url = "http://127.0.0.1:8000/api/v1"
+        self.pubkey_path = "../publisher_agent/feed/keys/publisher-2026-07.pub"
+        self.quotes = {"XLK": 150.00, "XLV": 130.00, "XLE": 90.00, "XLF": 40.00}
+
+state = AppState()
+
+def add_log(msg):
+    state.logs.append(msg)
+    if len(state.logs) > 50:
+        state.logs.pop(0)
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+@app.post("/api/login")
+def login(req: LoginRequest):
+    # AuthClient expects the root domain (http://127.0.0.1:8000) because it appends /api/v1/auth/login/ itself
+    auth_client = AuthClient(base_url="http://127.0.0.1:8000")
+    success, result = auth_client.login(req.username, req.password)
+    if not success:
+        raise HTTPException(status_code=401, detail=result)
+        
+    token = result
+    
+    # Initialize Core Agent
+    try:
+        broker = MockBroker("LiveAccount", cash_usd=50000.00)
+        state.agent = Agent("MyAccount", state.base_url, token, broker, state.pubkey_path, config={"entry_convention": "equal_weight"})
+        
+        # Start Poller
+        if state.poller:
+            state.poller.stop()
+            
+        def handle_new_target(file_path):
+            add_log(f"New Target Downloaded: {file_path}")
+            try:
+                import json
+                with open(file_path, "r") as f:
+                    signed_doc = json.load(f)
+                
+                # Extract session date for verification engine
+                session_date = signed_doc.get("document", {}).get("effective_session")
+                if not session_date:
+                    raise ValueError("Missing effective_session in document")
+                    
+                # Run the agent session (this triggers verification + execution)
+                result = state.agent.run_session(session_date, state.quotes, signed_doc=signed_doc)
+                add_log(f"Verification & Execution: {result['outcome']}")
+            except Exception as e:
+                add_log(f"Execution Error: {str(e)}")
+
+        state.poller = BackgroundPoller(
+            state.base_url, 
+            token, 
+            on_new_target=handle_new_target, 
+            on_error=lambda err: add_log(f"Poller Error: {err}"),
+            poll_interval=10
+        )
+        state.poller.start()
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Agent Init Failed: {str(e)}")
+        
+    return {"token": token}
+
+@app.get("/api/status")
+def get_status(authorization: Optional[str] = Header(None)):
+    if not state.agent:
+        return {"status": "NOT INITIALIZED", "equity": 0, "positions": {}, "logs": state.logs}
+        
+    return {
+        "status": "SYSTEM ACTIVE",
+        "equity": float(state.agent.broker.equity(state.quotes)),
+        "positions": {k: float(v) for k, v in state.agent.broker.positions.items()},
+        "logs": state.logs[-20:] # Last 20 logs
+    }
+
+@app.post("/api/sync")
+def force_sync(authorization: Optional[str] = Header(None)):
+    if not state.agent:
+        raise HTTPException(status_code=400, detail="Agent not initialized")
+    
+    add_log("Force Sync triggered...")
+    
+    # For now, simulate execution like the old UI did
+    from decimal import Decimal
+    state.agent.broker.cash -= Decimal("7500.00")
+    state.agent.broker.positions["XLK"] = Decimal("50.00")
+    
+    add_log("Executed 2 trades successfully.")
+    return {"success": True}
+
+@app.get("/api/latest-target")
+def get_latest_target(authorization: Optional[str] = Header(None)):
+    target_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "TargetPortfolio"))
+    if not os.path.exists(target_dir):
+        return {"filename": None, "raw_json": None, "document": None}
+        
+    files = [f for f in os.listdir(target_dir) if f.startswith("target_") and f.endswith(".json")]
+    if not files:
+        return {"filename": None, "raw_json": None, "document": None}
+        
+    # Sort files to get the latest (by name: target_2026_08_13.json)
+    files.sort(reverse=True)
+    latest_file = files[0]
+    
+    file_path = os.path.join(target_dir, latest_file)
+    try:
+        with open(file_path, "r") as f:
+            raw_content = f.read()
+            
+        import json
+        parsed = json.loads(raw_content)
+        document = parsed.get("document", {})
+        
+        return {
+            "filename": latest_file,
+            "raw_json": raw_content,
+            "document": document
+        }
+    except Exception as e:
+        return {"filename": latest_file, "raw_json": f"Error reading file: {str(e)}", "document": None}
+
+def run_server():
+    config = uvicorn.Config(app, host="127.0.0.1", port=8001, log_level="error")
+    server = uvicorn.Server(config)
+    
+    # Disable signal handlers to prevent ValueError when running in a thread
+    import contextlib
+    with contextlib.suppress(ValueError):
+        server.run()

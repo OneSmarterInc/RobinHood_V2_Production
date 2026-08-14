@@ -64,3 +64,6 @@ celerybeat.pid
 feed/
 keys/
 *.json
+
+timepass/
+PublisherAgentFrontend
