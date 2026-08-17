@@ -22,7 +22,8 @@ class AuthClient:
                 data = response.json()
                 token = data.get("token")
                 if token:
-                    self.save_token(token)
+                    # Removed self.save_token(token) so token.txt is no longer generated.
+                    # This ensures Secure_Token_Vault.html is the only file generated.
                     return True, token
             
             # If not 200, return the error message from the API

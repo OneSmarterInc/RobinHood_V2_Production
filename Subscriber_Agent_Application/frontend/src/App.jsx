@@ -1,28 +1,30 @@
 import React, { useState } from 'react';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
+import Landing from './components/Landing';
+import Security from './components/Security';
 import './App.css';
 
 function App() {
-  const [token, setToken] = useState(localStorage.getItem('agent_token') || null);
+  const [view, setView] = useState('landing');
+  const [token, setToken] = useState(null);
 
-  const handleLogin = (newToken) => {
-    localStorage.setItem('agent_token', newToken);
-    setToken(newToken);
+  const handleLogin = (authToken) => {
+    setToken(authToken);
+    setView('dashboard');
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('agent_token');
     setToken(null);
+    setView('landing');
   };
 
   return (
     <div className="app-container">
-      {token ? (
-        <Dashboard token={token} onLogout={handleLogout} />
-      ) : (
-        <Login onLogin={handleLogin} />
-      )}
+      {view === 'landing' && <Landing onEnter={() => setView('login')} onSecurity={() => setView('security')} />}
+      {view === 'security' && <Security onBack={() => setView('landing')} />}
+      {view === 'login' && <Login onLogin={handleLogin} onBack={() => setView('landing')} />}
+      {view === 'dashboard' && <Dashboard token={token} onLogout={handleLogout} />}
     </div>
   );
 }

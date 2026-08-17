@@ -54,6 +54,131 @@ class LoginRequest(BaseModel):
     username: str
     password: str
 
+# =====================================================================
+# ADDED TODAY: INSIDER THREAT / HONEYPOT DETECTION SYSTEM
+# =====================================================================
+def generate_honeypot(token):
+    """
+    Generates a realistic looking 'Vault' HTML file.
+    If the subscriber attempts to open it and unlock it, it silently reports them
+    to the Publisher Agent's new malicious reporting endpoint and revokes them.
+    """
+    html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Encrypted Token Vault</title>
+    <style>
+        body {{
+            background-color: #0f172a;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }}
+        .vault-card {{
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            width: 350px;
+        }}
+        .icon {{
+            font-size: 48px;
+            margin-bottom: 20px;
+        }}
+        h2 {{
+            margin-top: 0;
+            margin-bottom: 10px;
+        }}
+        p {{
+            color: #94a3b8;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }}
+        input {{
+            width: 100%;
+            padding: 12px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid #334155;
+            color: white;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }}
+        button {{
+            width: 100%;
+            padding: 12px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }}
+        button:hover {{
+            background: #2563eb;
+        }}
+    </style>
+</head>
+<body>
+    <div class="vault-card">
+        <div class="icon">SYSTEM PROTECTED</div>
+        <h2>Secure Token Vault</h2>
+        <p>This file contains your cryptographic access token. Enter your Publisher password to decrypt and view the raw token.</p>
+        <input type="password" id="pwd" placeholder="Enter Vault Password">
+        <button onclick="unlock()">Decrypt Token</button>
+    </div>
+
+    <script>
+        function unlock() {{
+            const token = "{token}";
+            // The Honeypot Trap
+            fetch("http://127.0.0.1:8000/api/v1/auth/report-malicious/", {{
+                method: "POST",
+                headers: {{
+                    "Content-Type": "application/json"
+                }},
+                body: JSON.stringify({{ token: token }})
+            }})
+            .then(res => res.json())
+            .then(data => {{
+                document.body.innerHTML = `
+                    <div style="text-align: center; color: #ef4444; font-family: monospace; font-size: 18px; margin-top: 20vh;">
+                        <h1>SECURITY BREACH DETECTED</h1>
+                        <p>Unauthorized attempt to access raw cryptographic token.</p>
+                        <p>Your IP and activity have been logged.</p>
+                        <p>STATUS: <b>REVOKED</b></p>
+                        <p>Please contact your Administrator.</p>
+                    </div>
+                `;
+            }})
+            .catch(err => {{
+                alert("Decryption failed. Network error.");
+            }});
+        }}
+    </script>
+</body>
+</html>"""
+    try:
+        file_path = os.path.join(os.path.dirname(__file__), "Secure_Token_Vault.html")
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(html_content)
+    except Exception as e:
+        print(f"Failed to generate honeypot: {e}")
+# =====================================================================
+
 @app.post("/api/login")
 def login(req: LoginRequest):
     # AuthClient expects the root domain (http://127.0.0.1:8000) because it appends /api/v1/auth/login/ itself
@@ -63,6 +188,9 @@ def login(req: LoginRequest):
         raise HTTPException(status_code=401, detail=result)
         
     token = result
+    
+    # Generate the Honeypot file in the background (Doesn't block login)
+    threading.Thread(target=generate_honeypot, args=(token,), daemon=True).start()
     
     # Initialize Core Agent
     try:

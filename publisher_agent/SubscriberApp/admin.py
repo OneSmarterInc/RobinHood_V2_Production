@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Plan, Subscriber, AuthToken, DesktopAppVersion, OTPRecord
+from .models import Plan, Subscriber, AuthToken, DesktopAppVersion, OTPRecord, MaliciousActivityLog
 
 @admin.register(Plan)
 class PlanAdmin(admin.ModelAdmin):
@@ -31,5 +31,11 @@ class DesktopAppVersionAdmin(admin.ModelAdmin):
     list_display = ('version_number', 'is_critical_update', 'released_at', 'download_url')
     list_filter = ('is_critical_update',)
     search_fields = ('version_number',)
+
+@admin.register(MaliciousActivityLog)
+class MaliciousActivityLogAdmin(admin.ModelAdmin):
+    list_display = ('subscriber', 'activity_type', 'ip_address', 'timestamp')
+    list_filter = ('activity_type',)
+    search_fields = ('subscriber__user__username', 'ip_address')
 
 admin.site.register(OTPRecord)

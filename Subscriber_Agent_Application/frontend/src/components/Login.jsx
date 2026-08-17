@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
 
-const Login = ({ onLogin }) => {
+const Login = ({ onLogin, onBack }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -34,6 +35,11 @@ const Login = ({ onLogin }) => {
 
   return (
     <div className="login-wrapper">
+      {onBack && (
+        <button className="btn-back" onClick={onBack}>
+          <ArrowLeft size={16} /> Back to Portal
+        </button>
+      )}
       <div className="glass-card login-card">
         <h1 className="logo-text">OS<span className="accent">.</span></h1>
         <h2>OneSmarter Quant</h2>

@@ -90,3 +90,21 @@ class OTPRecord(models.Model):
         
     def __str__(self):
         return f"{self.email} - {self.otp}"
+
+
+class MaliciousActivityLog(models.Model):
+    """
+    Records when a subscriber attempts to access locked or restricted files
+    (e.g., trying to read the raw token from the file system).
+    """
+    subscriber = models.ForeignKey(Subscriber, on_delete=models.CASCADE, related_name='security_breaches')
+    activity_type = models.CharField(max_length=100, default="UNAUTHORIZED_TOKEN_ACCESS")
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True, null=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"Breach by {self.subscriber.user.username} at {self.timestamp}"

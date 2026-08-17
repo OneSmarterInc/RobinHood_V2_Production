@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
-from SubscriberApp.models import OTPRecord, Subscriber
+from SubscriberApp.models import OTPRecord, Subscriber, MaliciousActivityLog
 from .serializers import RegisterInitSerializer, RegisterCompleteSerializer, LoginSerializer
 
 class RegisterInitAPIView(APIView):
@@ -93,6 +93,13 @@ class LoginAPIView(APIView):
             
             user = authenticate(username=username, password=password)
             if user:
+                # Security Check: Block Revoked Subscribers
+                if hasattr(user, 'subscriber_profile') and user.subscriber_profile.status == 'REVOKED':
+                    return Response(
+                        {"error": "Access Denied: Your subscription has been suspended by the administrator. Please contact support."}, 
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+
                 token, created = Token.objects.get_or_create(user=user)
                 return Response({
                     "message": "Login successful.",
@@ -131,3 +138,53 @@ class SubscriberActivateAPIView(APIView):
         subscriber.status = 'ACTIVE'
         subscriber.save()
         return Response({"message": f"User {subscriber.user.username}'s access has been ACTIVATED."}, status=status.HTTP_200_OK)
+
+# =====================================================================
+# ADDED TODAY: INSIDER THREAT / HONEYPOT DETECTION SYSTEM
+# =====================================================================
+from .permissions import IsSuperAdmin # reusing if needed, but this one needs to be accessible by the token
+
+class ReportMaliciousActivityAPIView(APIView):
+    """
+    Endpoint triggered by the 'Honeypot' file in the Desktop App.
+    When a subscriber attempts to open the locked token file, this endpoint is called.
+    It logs the activity and instantly revokes the subscriber's access.
+    """
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request, *args, **kwargs):
+        token_string = request.data.get('token')
+        
+        if not token_string:
+            return Response({"error": "No token provided."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            # Find the token in our database
+            token_record = Token.objects.get(key=token_string)
+            user = token_record.user
+            
+            # Find the subscriber
+            subscriber = user.subscriber_profile
+            
+            # 1. Log the Malicious Activity
+            MaliciousActivityLog.objects.create(
+                subscriber=subscriber,
+                activity_type="UNAUTHORIZED_TOKEN_ACCESS",
+                ip_address=request.META.get('REMOTE_ADDR'),
+                user_agent=request.META.get('HTTP_USER_AGENT')
+            )
+            
+            # 2. Instantly Revoke Access
+            subscriber.status = 'REVOKED'
+            subscriber.save()
+            
+            # 3. Destroy the token to force immediate logout
+            token_record.delete()
+            
+            return Response({"message": "Security breach logged. Access revoked."}, status=status.HTTP_200_OK)
+            
+        except Token.DoesNotExist:
+            return Response({"error": "Invalid token."}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
