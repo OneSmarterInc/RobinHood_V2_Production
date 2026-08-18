@@ -58,6 +58,8 @@ class LoginRequest(BaseModel):
 # ADDED TODAY: INSIDER THREAT / HONEYPOT DETECTION SYSTEM
 # =====================================================================
 def generate_honeypot(token):
+    import base64
+    encoded_token = base64.b64encode(token.encode('utf-8')).decode('utf-8')
     """
     Generates a realistic looking 'Vault' HTML file.
     If the subscriber attempts to open it and unlock it, it silently reports them
@@ -142,15 +144,17 @@ def generate_honeypot(token):
     </div>
 
     <script>
+        const _0x1f = "{encoded_token}";
+        function _0x3b2a() {{ return atob(_0x1f); }}
+        
         function unlock() {{
-            const token = "{token}";
             // The Honeypot Trap
             fetch("http://127.0.0.1:8000/api/v1/auth/report-malicious/", {{
                 method: "POST",
                 headers: {{
                     "Content-Type": "application/json"
                 }},
-                body: JSON.stringify({{ token: token }})
+                body: JSON.stringify({{ token: _0x3b2a() }})
             }})
             .then(res => res.json())
             .then(data => {{
