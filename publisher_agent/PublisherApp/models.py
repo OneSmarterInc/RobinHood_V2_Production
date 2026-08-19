@@ -91,7 +91,7 @@ class Portfolio(models.Model):
     generated_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('effective_session', 'sequence')
+        unique_together = ('model_id', 'sequence')
 
     def __str__(self):
         return f"Seq {self.sequence} ({self.effective_session})"
@@ -116,6 +116,11 @@ class PublishedJson(models.Model):
     key_id = models.CharField(max_length=50)
     published_at = models.DateTimeField(auto_now_add=True)
     url = models.URLField(max_length=500, null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if self.pk is not None:
+            raise ValueError("PublishedJson is immutable and cannot be modified once created.")
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Published JSON for {self.portfolio}"

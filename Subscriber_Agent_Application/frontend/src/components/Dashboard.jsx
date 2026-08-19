@@ -103,13 +103,13 @@ const Dashboard = ({ token, onLogout }) => {
              <p>The background poller is actively checking for new, cryptographically verified targets.</p>
           </div>
         ) : (
-          <div className="glass-card advisory-card" style={{ borderColor: markedDone ? '#22c55e' : '#3b82f6', transition: 'border-color 0.5s ease' }}>
-            <div className="advisory-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '15px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+          <div className="glass-card advisory-card" style={{ borderColor: markedDone ? 'var(--success)' : 'var(--brand-primary)', transition: 'border-color 0.5s ease', background: 'var(--bg-panel)', boxShadow: 'var(--shadow-xl)' }}>
+            <div className="advisory-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '15px', borderBottom: '1px solid var(--border-subtle)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <CheckCircle2 size={28} color="#22c55e" />
+                <CheckCircle2 size={28} style={{ color: 'var(--success)' }} />
                 <div>
-                  <h2 style={{ margin: 0, color: 'white' }}>Today's Verified Targets</h2>
-                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>Session: {document.effective_session}</span>
+                  <h2 style={{ margin: 0, color: 'var(--text-primary)', fontWeight: '700' }}>Today's Verified Targets</h2>
+                  <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Session: {document.effective_session}</span>
                 </div>
               </div>
               <button className="btn-secondary btn-sm" onClick={() => setShowModal(true)}>
@@ -117,56 +117,77 @@ const Dashboard = ({ token, onLogout }) => {
               </button>
             </div>
 
-            <div className="rationale-box" style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', padding: '15px', borderRadius: '8px', marginBottom: '25px' }}>
-              <h4 style={{ margin: '0 0 8px 0', color: '#60a5fa', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div className="rationale-box" style={{ background: 'var(--brand-light)', border: '1px solid rgba(79, 70, 229, 0.2)', padding: '16px', borderRadius: '10px', marginBottom: '25px' }}>
+              <h4 style={{ margin: '0 0 8px 0', color: 'var(--brand-primary)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: '600' }}>
                 <Activity size={16} /> Market Rationale
               </h4>
-              <p style={{ margin: 0, fontSize: '15px', lineHeight: '1.5' }}>{rationale}</p>
+              <p style={{ margin: 0, fontSize: '15px', lineHeight: '1.6', color: 'var(--text-primary)' }}>{rationale}</p>
             </div>
 
-            <h3 style={{ marginBottom: '15px', color: '#e2e8f0' }}>Target Allocations</h3>
-            <div className="pos-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px', marginBottom: '30px' }}>
+            <h3 style={{ marginBottom: '16px', color: 'var(--text-primary)', fontSize: '16px', fontWeight: '600' }}>Target Allocations</h3>
+            <div className="pos-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px', marginBottom: '30px' }}>
               {Object.entries(targets).map(([sym, pct], idx) => (
-                <div key={sym} className="pos-item" style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div className="pos-info" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div className="pos-avatar" style={{ background: '#3b82f6', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold' }}>
+                <div key={sym} className="pos-item" style={{ background: '#f8fafc', padding: '16px', borderRadius: '10px', border: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: 'var(--shadow-sm)' }}>
+                  <div className="pos-info" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div className="pos-avatar" style={{ background: 'var(--brand-primary)', color: 'white', width: '40px', height: '40px', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold', fontSize: '18px' }}>
                       {sym.substring(0, 1)}
                     </div>
-                    <span className="pos-sym" style={{ fontSize: '18px', fontWeight: 'bold' }}>{sym}</span>
+                    <span className="pos-sym" style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)' }}>{sym}</span>
                   </div>
                   <div className="pos-qty" style={{ textAlign: 'right' }}>
-                    <span className="qty-val" style={{ fontSize: '20px', fontWeight: 'bold', color: '#fff' }}>{pct}%</span>
+                    <span className="qty-val" style={{ fontSize: '22px', fontWeight: '800', color: 'var(--brand-primary)' }}>{pct}%</span>
                   </div>
                 </div>
               ))}
               {cashPct > 0 && (
-                <div className="pos-item" style={{ background: 'rgba(34, 197, 94, 0.1)', padding: '15px', borderRadius: '8px', border: '1px solid rgba(34, 197, 94, 0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div className="pos-info" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div className="pos-avatar" style={{ background: '#22c55e', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold' }}>
+                <div className="pos-item" style={{ background: 'var(--success-bg)', padding: '16px', borderRadius: '10px', border: '1px solid rgba(5, 150, 105, 0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: 'var(--shadow-sm)' }}>
+                  <div className="pos-info" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div className="pos-avatar" style={{ background: 'var(--success)', color: 'white', width: '40px', height: '40px', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold', fontSize: '18px' }}>
                       $
                     </div>
-                    <span className="pos-sym" style={{ fontSize: '18px', fontWeight: 'bold', color: '#22c55e' }}>CASH</span>
+                    <span className="pos-sym" style={{ fontSize: '18px', fontWeight: '700', color: 'var(--success)' }}>CASH</span>
                   </div>
                   <div className="pos-qty" style={{ textAlign: 'right' }}>
-                    <span className="qty-val" style={{ fontSize: '20px', fontWeight: 'bold', color: '#22c55e' }}>{cashPct}%</span>
+                    <span className="qty-val" style={{ fontSize: '22px', fontWeight: '800', color: 'var(--success)' }}>{cashPct}%</span>
                   </div>
                 </div>
               )}
             </div>
 
-            <div className="action-box" style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#94a3b8', fontSize: '14px' }}>
-                <Activity size={16} color="#f59e0b" />
-                <span>Execute these targets manually on your preferred broker.</span>
+            <div className="portfolio-section" style={{ marginTop: '30px', paddingTop: '20px', borderTop: '1px solid var(--border-subtle)' }}>
+              <h3 style={{ marginBottom: '16px', color: 'var(--text-primary)', fontSize: '16px', fontWeight: '600' }}>Live Broker Portfolio</h3>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px' }}>
+                <div className="equity-card" style={{ background: 'var(--brand-primary)', color: 'white', padding: '20px', borderRadius: '10px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <span style={{ fontSize: '14px', opacity: 0.9 }}>Total Equity</span>
+                  <span style={{ fontSize: '32px', fontWeight: 'bold', margin: '10px 0' }}>
+                    {data.equity ? data.equity.toLocaleString('en-US', {style: 'currency', currency: 'USD'}) : '$0.00'}
+                  </span>
+                  <span style={{ fontSize: '12px', opacity: 0.8 }}><Activity size={12} style={{display:'inline'}}/> Auto-managed by Policy Engine</span>
+                </div>
+
+                <div className="holdings-card" style={{ background: '#f8fafc', padding: '20px', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
+                   <span style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: '600', marginBottom: '10px', display: 'block' }}>Current Positions</span>
+                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                     {data.positions && Object.keys(data.positions).length > 0 ? (
+                       Object.entries(data.positions).map(([sym, shares]) => (
+                         <div key={sym} style={{ background: 'white', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)', fontSize: '14px', fontWeight: 'bold' }}>
+                           <span style={{ color: 'var(--brand-primary)' }}>{sym}</span>: {shares} shs
+                         </div>
+                       ))
+                     ) : (
+                       <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>No open positions.</span>
+                     )}
+                   </div>
+                </div>
               </div>
-              <button 
-                className={markedDone ? "btn-success" : "btn-primary"} 
-                onClick={() => setMarkedDone(true)}
-                style={{ padding: '12px 24px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', cursor: markedDone ? 'default' : 'pointer', background: markedDone ? '#22c55e' : '', color: 'white', border: 'none', borderRadius: '6px' }}
-                disabled={markedDone}
-              >
-                {markedDone ? <><CheckCircle2 size={18}/> Acknowledged</> : "Mark as Executed"}
-              </button>
+            </div>
+
+            <div className="logs-section" style={{ marginTop: '20px', background: '#0f172a', borderRadius: '10px', padding: '16px', color: '#10b981', fontFamily: 'monospace', fontSize: '13px', maxHeight: '150px', overflowY: 'auto' }}>
+              <h4 style={{ color: '#fff', margin: '0 0 10px 0', fontSize: '14px' }}>Execution Terminal</h4>
+              {data.logs?.map((log, i) => (
+                <div key={i} style={{ marginBottom: '4px' }}>{`> ${log}`}</div>
+              ))}
             </div>
           </div>
         )}

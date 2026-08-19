@@ -47,6 +47,10 @@ class PortfolioRulesEngine:
             status='IN_PROGRESS'
         )
         
+        # Calculate monotonic sequence per model_id
+        last_portfolio = Portfolio.objects.filter(model_id="rotation-core").order_by('-sequence').first()
+        seq = last_portfolio.sequence + 1 if last_portfolio else 1
+        
         # Create Portfolio Object in Database
         portfolio = Portfolio.objects.create(
             strategy_run=strategy_run,
@@ -55,7 +59,7 @@ class PortfolioRulesEngine:
             phase=phase,
             cash_percentage=cash_pct,
             effective_session=timezone.now().date(),
-            sequence=Portfolio.objects.count() + 1
+            sequence=seq
         )
         
         # Mark run as success

@@ -87,7 +87,16 @@ class JSONPublisher:
             positions[pos.symbol] = pos.target_percentage
             
         now = timezone.now()
-        # Execution window starts at 10:00 AM NY time, ends at 10:30 AM
+        
+        # Session bound validity (closes at 4:00 PM)
+        session_str = portfolio.effective_session.isoformat()
+        valid_until_str = f"{session_str}T16:00:00-04:00"
+        
+        # Calculate next trading day (skip weekends)
+        next_day = portfolio.effective_session + timedelta(days=1)
+        if next_day.weekday() >= 5: # 5=Sat, 6=Sun
+            next_day += timedelta(days=(7 - next_day.weekday()))
+        next_publish_str = f"{next_day.isoformat()}T09:15:00-04:00"
         
         document = {
             "schema_version": "1.0.0",
@@ -98,13 +107,13 @@ class JSONPublisher:
             },
             "sequence": portfolio.sequence,
             "published_at": now.isoformat(),
-            "effective_session": portfolio.effective_session.isoformat(),
+            "effective_session": session_str,
             "valid_from": now.isoformat(),
-            "valid_until": (now + timedelta(hours=6)).isoformat(),
+            "valid_until": valid_until_str,
             "liveness": {
                 "model_evaluated": True,
                 "evaluated_at": now.isoformat(),
-                "next_expected_publish": "next_trading_day T09:15:00-04:00"
+                "next_expected_publish": next_publish_str
             },
             "execution_window": {
                 "start": "10:00:00-04:00",
@@ -121,20 +130,12 @@ class JSONPublisher:
                 "cash_pct": portfolio.cash_percentage
             },
             "constraints": {
-                "max_single_position_pct": 30.0,
-                "max_total_deployed_pct": 60.0,
-                "min_cash_floor_pct": 40.0,
-                "min_trade_notional_usd": 250.0,
-                "rebalance_band_bps": 200,
-                "max_rebalances_per_position_per_week": 1,
-                "pdt_guard": {
-                    "equity_threshold_usd": 25000.0,
-                    "below_threshold_mode": "min_hold_days",
-                    "min_hold_days": 2
-                },
-                "fractional_shares": "allowed",
-                "on_insufficient_cash": "scale_pro_rata",
-                "on_unavailable_symbol": "skip_leg_hold_cash"
+                "max_positions": 4,
+                "entry_weight_pct": 25.0,
+                "entry_weight_basis": "current_equity",
+                "position_weight_cap_pct": None,
+                "maintenance_rebalancing": "none",
+                "same_session_reentry": "blocked"
             },
             "rationale": f"System determined {portfolio.regime} regime. Executed fully systematic sector rotation logic."
         }

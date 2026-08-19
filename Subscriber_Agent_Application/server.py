@@ -19,7 +19,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], 
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:8001", "http://127.0.0.1:8001"], 
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -33,6 +33,21 @@ if os.path.exists(dist_dir):
     def serve_index():
         return FileResponse(os.path.join(dist_dir, "index.html"))
 
+def fetch_real_quotes(symbols):
+    import yfinance as yf
+    quotes = {}
+    for sym in symbols:
+        try:
+            ticker = yf.Ticker(sym)
+            df = ticker.history(period="1d")
+            if not df.empty:
+                quotes[sym] = float(df['Close'].iloc[-1])
+            else:
+                quotes[sym] = 100.00 # fallback
+        except:
+            quotes[sym] = 100.00
+    return quotes
+
 # Global State for the Desktop App (since it's a single-user local app)
 class AppState:
     def __init__(self):
@@ -41,7 +56,8 @@ class AppState:
         self.logs = ["Waiting for automated sync..."]
         self.base_url = "http://127.0.0.1:8000/api/v1"
         self.pubkey_path = "../publisher_agent/feed/keys/publisher-2026-07.pub"
-        self.quotes = {"XLK": 150.00, "XLV": 130.00, "XLE": 90.00, "XLF": 40.00}
+        # Fetch real market data from broker/yahoo instead of hardcoding
+        self.quotes = fetch_real_quotes(["XLK", "XLV", "XLE", "XLF", "XLI", "SPY"])
 
 state = AppState()
 
@@ -55,133 +71,6 @@ class LoginRequest(BaseModel):
     password: str
 
 # =====================================================================
-# ADDED TODAY: INSIDER THREAT / HONEYPOT DETECTION SYSTEM
-# =====================================================================
-def generate_honeypot(token):
-    import base64
-    encoded_token = base64.b64encode(token.encode('utf-8')).decode('utf-8')
-    """
-    Generates a realistic looking 'Vault' HTML file.
-    If the subscriber attempts to open it and unlock it, it silently reports them
-    to the Publisher Agent's new malicious reporting endpoint and revokes them.
-    """
-    html_content = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Encrypted Token Vault</title>
-    <style>
-        body {{
-            background-color: #0f172a;
-            color: white;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            overflow: hidden;
-        }}
-        .vault-card {{
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            text-align: center;
-            width: 350px;
-        }}
-        .icon {{
-            font-size: 48px;
-            margin-bottom: 20px;
-        }}
-        h2 {{
-            margin-top: 0;
-            margin-bottom: 10px;
-        }}
-        p {{
-            color: #94a3b8;
-            font-size: 14px;
-            margin-bottom: 30px;
-        }}
-        input {{
-            width: 100%;
-            padding: 12px;
-            background: rgba(15, 23, 42, 0.5);
-            border: 1px solid #334155;
-            color: white;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            box-sizing: border-box;
-            font-size: 16px;
-        }}
-        button {{
-            width: 100%;
-            padding: 12px;
-            background: #3b82f6;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.2s;
-        }}
-        button:hover {{
-            background: #2563eb;
-        }}
-    </style>
-</head>
-<body>
-    <div class="vault-card">
-        <div class="icon">SYSTEM PROTECTED</div>
-        <h2>Secure Token Vault</h2>
-        <p>This file contains your cryptographic access token. Enter your Publisher password to decrypt and view the raw token.</p>
-        <input type="password" id="pwd" placeholder="Enter Vault Password">
-        <button onclick="unlock()">Decrypt Token</button>
-    </div>
-
-    <script>
-        const _0x1f = "{encoded_token}";
-        function _0x3b2a() {{ return atob(_0x1f); }}
-        
-        function unlock() {{
-            // The Honeypot Trap
-            fetch("http://127.0.0.1:8000/api/v1/auth/report-malicious/", {{
-                method: "POST",
-                headers: {{
-                    "Content-Type": "application/json"
-                }},
-                body: JSON.stringify({{ token: _0x3b2a() }})
-            }})
-            .then(res => res.json())
-            .then(data => {{
-                document.body.innerHTML = `
-                    <div style="text-align: center; color: #ef4444; font-family: monospace; font-size: 18px; margin-top: 20vh;">
-                        <h1>SECURITY BREACH DETECTED</h1>
-                        <p>Unauthorized attempt to access raw cryptographic token.</p>
-                        <p>Your IP and activity have been logged.</p>
-                        <p>STATUS: <b>REVOKED</b></p>
-                        <p>Please contact your Administrator.</p>
-                    </div>
-                `;
-            }})
-            .catch(err => {{
-                alert("Decryption failed. Network error.");
-            }});
-        }}
-    </script>
-</body>
-</html>"""
-    try:
-        file_path = os.path.join(os.path.dirname(__file__), "Secure_Token_Vault.html")
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.write(html_content)
-    except Exception as e:
-        print(f"Failed to generate honeypot: {e}")
-# =====================================================================
 
 @app.post("/api/login")
 def login(req: LoginRequest):
@@ -192,9 +81,6 @@ def login(req: LoginRequest):
         raise HTTPException(status_code=401, detail=result)
         
     token = result
-    
-    # Generate the Honeypot file in the background (Doesn't block login)
-    threading.Thread(target=generate_honeypot, args=(token,), daemon=True).start()
     
     # Initialize Core Agent
     try:
@@ -244,6 +130,8 @@ def get_status(authorization: Optional[str] = Header(None)):
         
     return {
         "status": "SYSTEM ACTIVE",
+        "equity": float(state.agent.broker.equity(state.quotes)),
+        "positions": {k: float(v) for k, v in state.agent.broker.positions.items()},
         "logs": state.logs[-20:], # Last 20 logs
         "latest_document": state.agent.latest_document
     }
@@ -253,15 +141,32 @@ def force_sync(authorization: Optional[str] = Header(None)):
     if not state.agent:
         raise HTTPException(status_code=400, detail="Agent not initialized")
     
-    add_log("Force Sync triggered...")
+    add_log("Manual Sync triggered...")
     
-    # --- ADVISORY MODE ONLY: No Execution ---
-    # from decimal import Decimal
-    # state.agent.broker.cash -= Decimal("7500.00")
-    # state.agent.broker.positions["XLK"] = Decimal("50.00")
-    
-    add_log("Checked for new signals.")
-    return {"success": True}
+    try:
+        # Perform a real fetch from the publisher
+        data = state.agent.fetch("targets/latest/")
+        session_date = data.get("document", {}).get("effective_session")
+        if not session_date:
+            raise ValueError("Missing effective_session in fetched document")
+            
+        result = state.agent.run_session(session_date, state.quotes, signed_doc=data)
+        add_log(f"Verification & Execution: {result['outcome']}")
+        
+        # Save it for the UI to pick up as the latest file
+        import os, json
+        target_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "TargetPortfolio"))
+        os.makedirs(target_dir, exist_ok=True)
+        formatted_date = session_date.replace("-", "_")
+        file_path = os.path.join(target_dir, f"target_{formatted_date}.json")
+        with open(file_path, "w") as f:
+            json.dump(data, f, indent=4)
+            
+        return {"success": True, "outcome": result['outcome']}
+    except Exception as e:
+        error_msg = f"Sync Error: {str(e)}"
+        add_log(error_msg)
+        raise HTTPException(status_code=500, detail=error_msg)
 
 @app.get("/api/latest-target")
 def get_latest_target(authorization: Optional[str] = Header(None)):
