@@ -244,9 +244,8 @@ def get_status(authorization: Optional[str] = Header(None)):
         
     return {
         "status": "SYSTEM ACTIVE",
-        "equity": float(state.agent.broker.equity(state.quotes)),
-        "positions": {k: float(v) for k, v in state.agent.broker.positions.items()},
-        "logs": state.logs[-20:] # Last 20 logs
+        "logs": state.logs[-20:], # Last 20 logs
+        "latest_document": state.agent.latest_document
     }
 
 @app.post("/api/sync")
@@ -256,12 +255,12 @@ def force_sync(authorization: Optional[str] = Header(None)):
     
     add_log("Force Sync triggered...")
     
-    # For now, simulate execution like the old UI did
-    from decimal import Decimal
-    state.agent.broker.cash -= Decimal("7500.00")
-    state.agent.broker.positions["XLK"] = Decimal("50.00")
+    # --- ADVISORY MODE ONLY: No Execution ---
+    # from decimal import Decimal
+    # state.agent.broker.cash -= Decimal("7500.00")
+    # state.agent.broker.positions["XLK"] = Decimal("50.00")
     
-    add_log("Executed 2 trades successfully.")
+    add_log("Checked for new signals.")
     return {"success": True}
 
 @app.get("/api/latest-target")

@@ -27,6 +27,7 @@ class Agent:
         self.pubkey = load_public_key(pubkey_path)
         self.config = config or {}
         self.last_sequence = None
+        self.latest_document = None
         self.audit = []
 
     def fetch(self, path):
@@ -66,20 +67,26 @@ class Agent:
         rec["regime"] = f"{doc['regime']['argus1_band']}/{doc['regime']['flowos_phase']}"
         rec["targets"] = doc["targets"]["positions"]
 
-        account = self.broker.snapshot(quotes)
-        account["position_opened"] = {k: date.fromisoformat(v)
-                                      for k, v in account["position_opened"].items()}
+        # --- ADVISORY MODE ONLY: No Broker Execution ---
+        # account = self.broker.snapshot(quotes)
+        # account["position_opened"] = {k: date.fromisoformat(v)
+        #                               for k, v in account["position_opened"].items()}
 
-        result = compute_orders(doc, account, quotes, date.fromisoformat(session), self.config)
-        rec["equity_before"] = result["equity_usd"]
-        rec["holds"] = result["holds"]
-        rec["notes"] = result["notes"]
+        # result = compute_orders(doc, account, quotes, date.fromisoformat(session), self.config)
+        # rec["equity_before"] = result["equity_usd"]
+        # rec["holds"] = result["holds"]
+        # rec["notes"] = result["notes"]
 
-        fills = self.broker.submit(result["orders"], quotes, session)
-        rec["orders"] = fills
-        rec["equity_after"] = float(self.broker.equity(quotes))
-        rec["outcome"] = f"{len(fills)} order(s)" if fills else "no orders"
+        # fills = self.broker.submit(result["orders"], quotes, session)
+        # rec["orders"] = fills
+        # rec["equity_after"] = float(self.broker.equity(quotes))
+        # rec["outcome"] = f"{len(fills)} order(s)" if fills else "no orders"
+        
+        # We only record that we received the signal
+        rec["notes"] = [f"Signal Received for {session}: {doc['rationale']}"]
+        rec["outcome"] = "Signal Displayed to User"
 
         self.last_sequence = doc["sequence"]
+        self.latest_document = doc # Save the raw document to display on UI
         self.audit.append(rec)
         return rec
