@@ -51,6 +51,9 @@ class PortfolioRulesEngine:
         last_portfolio = Portfolio.objects.filter(model_id="rotation-core").order_by('-sequence').first()
         seq = last_portfolio.sequence + 1 if last_portfolio else 1
         
+        from PublisherApp.PortfolioMathEngine.market_calendar import get_effective_session
+        effective_session = get_effective_session()
+
         # Create Portfolio Object in Database
         portfolio = Portfolio.objects.create(
             strategy_run=strategy_run,
@@ -58,7 +61,7 @@ class PortfolioRulesEngine:
             regime=self.regime,
             phase=phase,
             cash_percentage=cash_pct,
-            effective_session=timezone.now().date(),
+            effective_session=effective_session,
             sequence=seq
         )
         

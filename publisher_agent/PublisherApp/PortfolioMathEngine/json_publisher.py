@@ -92,10 +92,9 @@ class JSONPublisher:
         session_str = portfolio.effective_session.isoformat()
         valid_until_str = f"{session_str}T16:00:00-04:00"
         
-        # Calculate next trading day (skip weekends)
-        next_day = portfolio.effective_session + timedelta(days=1)
-        if next_day.weekday() >= 5: # 5=Sat, 6=Sun
-            next_day += timedelta(days=(7 - next_day.weekday()))
+        # Calculate next trading day using Market Calendar (handles holidays and weekends)
+        from PublisherApp.PortfolioMathEngine.market_calendar import get_next_trading_day
+        next_day = get_next_trading_day(portfolio.effective_session)
         next_publish_str = f"{next_day.isoformat()}T09:15:00-04:00"
         
         document = {
