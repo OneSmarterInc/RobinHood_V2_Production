@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from SubscriberApp.models import OTPRecord
+from AccessApp.models import OTPRecord
 from django.contrib.auth.models import User
 
 class RegisterInitSerializer(serializers.Serializer):

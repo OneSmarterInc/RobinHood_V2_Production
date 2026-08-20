@@ -7,7 +7,7 @@ from PublisherApp.models import PublishedJson
 from django.conf import settings
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
-from SubscriberApp.api.permissions import IsActiveSubscriber
+from AccessApp.api.permissions import IsActiveSubscriber
 
 class LatestTargetAPIView(APIView):
     """

@@ -11,7 +11,7 @@ The architecture strictly separates strategy generation (Publisher) from strateg
 1. **Publisher (Backend)**
    The central backend (Django/Celery) executes the mathematical engine against daily market data to determine optimal portfolio targets. It generates a single, cryptographically signed JSON document and serves it via a read-only endpoint.
 2. **Subscriber (Client Agent)**
-   Clients run a local desktop agent that securely authenticates via token, downloads the daily signed JSON, and verifies the cryptographic signature. The agent then reads the client's local broker holdings and runs a strict Policy Engine (enforcing PDT rules, cash floors, and rebalance bands) to calculate executable orders locally.
+   Clients run a local desktop agent that securely authenticates via token, downloads the daily signed JSON, and verifies the cryptographic signature. The agent then reads the client's local broker holdings and runs the Policy Engine to calculate executable orders locally based on the strict constraints defined by the Publisher document.
 
 This model ensures maximum security, strict regulatory compliance, and near-infinite horizontal scalability.
 
@@ -20,7 +20,7 @@ This model ensures maximum security, strict regulatory compliance, and near-infi
 The backend is built as a robust Django SaaS application, orchestrated via Celery for automated daily execution.
 
 - **`PublisherApp/`**: Contains the core Math Engine and Rules Engine. It fetches market data, calculates regime/momentum, and generates the cryptographically signed daily target portfolio JSON.
-- **`SubscriberApp/`**: Manages subscription plans, user accounts, and token lifecycles. Token revocation immediately denies endpoint access to the client agent (403 Forbidden).
+- **`AccessApp/`**: Manages subscription plans, user accounts, and token lifecycles. Token revocation immediately denies endpoint access to the client agent (403 Forbidden).
 
 ## Core Security & Scalability
 

@@ -1,5 +1,139 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, RefreshCw, Power, Server, FileJson, X, CheckCircle2 } from 'lucide-react';
+import { Activity, RefreshCw, Power, Server, FileJson, X, CheckCircle2, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+
+
+const CalendarModal = ({ token, onClose }) => {
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [tradingDays, setTradingDays] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchCalendar = async (year, month) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`http://127.0.0.1:8001/api/calendar?year=${year}&month=${month}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTradingDays(data.trading_days || []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchCalendar(currentDate.getFullYear(), currentDate.getMonth() + 1);
+  }, [currentDate, token]);
+
+  const nextMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+  };
+  const prevMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+  };
+
+  const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+  const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
+  
+  const days = [];
+  for (let i = 0; i < firstDay; i++) {
+    days.push(null);
+  }
+  for (let i = 1; i <= daysInMonth; i++) {
+    days.push(i);
+  }
+
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+  return (
+    <div className="modal-overlay" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', zIndex: 1000}}>
+      <div style={{
+        background: '#ffffff', 
+        borderRadius: '12px', 
+        width: '100%', 
+        maxWidth: '450px', 
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+        overflow: 'hidden',
+        fontFamily: 'system-ui, sans-serif'
+      }}>
+        {/* Header */}
+        <div style={{
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          padding: '20px 24px', 
+          borderBottom: '1px solid #e2e8f0',
+          background: '#f8fafc'
+        }}>
+          <h3 style={{margin: 0, fontSize: '18px', fontWeight: '600', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px'}}>
+            <Calendar size={20} color="#4f46e5" /> NYSE Market Calendar
+          </h3>
+          <button onClick={onClose} style={{background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b'}}>
+            <X size={20} />
+          </button>
+        </div>
+        
+        {/* Body */}
+        <div style={{padding: '24px'}}>
+          {/* Navigation */}
+          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px'}}>
+            <button onClick={prevMonth} style={{
+              background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '36px', height: '36px', 
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#475569'
+            }}><ChevronLeft size={20}/></button>
+            <h4 style={{margin: 0, fontSize: '16px', fontWeight: '600', color: '#1e293b'}}>
+              {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+            </h4>
+            <button onClick={nextMonth} style={{
+              background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '36px', height: '36px', 
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#475569'
+            }}><ChevronRight size={20}/></button>
+          </div>
+          
+          {/* Calendar Grid */}
+          <div style={{display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', textAlign: 'center'}}>
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+              <div key={d} style={{fontWeight: '600', color: '#94a3b8', fontSize: '12px', paddingBottom: '8px', textTransform: 'uppercase'}}>
+                {d}
+              </div>
+            ))}
+            
+            {days.map((day, idx) => {
+              if (day === null) return <div key={idx}></div>;
+              const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+              const isOpen = tradingDays.includes(dateStr);
+              return (
+                <div key={idx} style={{
+                  padding: '10px 0',
+                  borderRadius: '8px',
+                  background: isOpen ? '#e0e7ff' : '#f8fafc',
+                  color: isOpen ? '#4f46e5' : '#94a3b8',
+                  border: isOpen ? '1px solid #c7d2fe' : '1px dashed #cbd5e1',
+                  fontWeight: isOpen ? '600' : '400',
+                  fontSize: '14px'
+                }}>
+                  {day}
+                </div>
+              );
+            })}
+          </div>
+          
+          {/* Legend */}
+          <div style={{marginTop: '28px', display: 'flex', gap: '20px', justifyContent: 'center', fontSize: '13px', color: '#64748b', fontWeight: '500'}}>
+            <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <div style={{width: '14px', height: '14px', background: '#e0e7ff', border: '1px solid #c7d2fe', borderRadius: '4px'}}></div> Market Open
+            </div>
+            <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <div style={{width: '14px', height: '14px', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '4px'}}></div> Market Closed
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Dashboard = ({ token, onLogout }) => {
   const [data, setData] = useState({
@@ -10,6 +144,7 @@ const Dashboard = ({ token, onLogout }) => {
 
   const [latestTargetFile, setLatestTargetFile] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [markedDone, setMarkedDone] = useState(false);
 
   const fetchStatus = async () => {
@@ -75,6 +210,9 @@ const Dashboard = ({ token, onLogout }) => {
         <div className="sidebar-menu">
           <button className="btn-secondary" onClick={forceSync}>
             <RefreshCw size={16} /> Sync Signals
+          </button>
+          <button className="btn-secondary" onClick={() => setShowCalendarModal(true)} style={{marginTop: '10px'}}>
+            <Calendar size={16} /> Market Calendar
           </button>
         </div>
 
@@ -195,6 +333,7 @@ const Dashboard = ({ token, onLogout }) => {
       </div>
 
       {/* JSON Viewer Modal */}
+      {showCalendarModal && <CalendarModal token={token} onClose={() => setShowCalendarModal(false)} />}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>

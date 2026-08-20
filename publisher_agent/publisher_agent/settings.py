@@ -50,7 +50,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     "PublisherApp",
-    "SubscriberApp",
+    "AccessApp",
     "django_celery_beat",
     "corsheaders",
 ]

@@ -168,6 +168,38 @@ def force_sync(authorization: Optional[str] = Header(None)):
         add_log(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
+
+@app.get("/api/calendar")
+def get_calendar(year: int, month: int, authorization: Optional[str] = Header(None)):
+    import pandas_market_calendars as mcal
+    import pandas as pd
+    from datetime import date
+    import datetime
+    
+    try:
+        nyse = mcal.get_calendar('NYSE')
+        start_date = f"{year}-{month:02d}-01"
+        
+        # Get last day of the month
+        if month == 12:
+            end_date = f"{year}-12-31"
+        else:
+            next_month = date(year, month + 1, 1)
+            last_day = next_month - datetime.timedelta(days=1)
+            end_date = last_day.strftime("%Y-%m-%d")
+            
+        schedule = nyse.schedule(start_date=start_date, end_date=end_date)
+        trading_days = [d.strftime("%Y-%m-%d") for d in schedule.index]
+        
+        return {
+            "year": year,
+            "month": month,
+            "trading_days": trading_days
+        }
+    except Exception as e:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=f"Calendar Error: {str(e)}")
+
 @app.get("/api/latest-target")
 def get_latest_target(authorization: Optional[str] = Header(None)):
     target_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "TargetPortfolio"))

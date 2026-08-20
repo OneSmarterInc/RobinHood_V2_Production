@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class SubscriberappConfig(AppConfig):
+class AccessAppConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'SubscriberApp'
+    name = 'AccessApp'

@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
-from SubscriberApp.models import OTPRecord, Subscriber, MaliciousActivityLog
+from AccessApp.models import OTPRecord, Subscriber, MaliciousActivityLog
 from .serializers import RegisterInitSerializer, RegisterCompleteSerializer, LoginSerializer
 
 class RegisterInitAPIView(APIView):
