@@ -51,15 +51,12 @@ class BackgroundPoller:
                 # Version 3 JSON structure has it in plain text under 'document'
                 document = data.get("document", {})
                 
-                # Use the effective_session date to construct the filename like target_2026_08_13.json
-                # This perfectly mimics the backend's naming convention and checks if we already downloaded it today
-                session_date = document.get("effective_session", "unknown_date")
-                formatted_date = session_date.replace("-", "_")
+                seq = document.get("sequence", 0)
                 
-                file_name = f"target_{formatted_date}.json"
+                file_name = f"target_seq_{seq}.json"
                 file_path = os.path.join(self.target_dir, file_name)
                 
-                # Check if we already downloaded this date's target
+                # Check if we already downloaded this sequence's target
                 if os.path.exists(file_path):
                     return # Already have it, do nothing
                 
