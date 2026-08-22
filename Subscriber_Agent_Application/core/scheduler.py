@@ -48,7 +48,8 @@ class BackgroundPoller:
                 data = response.json()
                 
                 # Extract sequence without verifying signature (just for filename check)
-                # Version 3 JSON structure has it in plain text under 'document'
+                # Version 3 JSON structure has it in plain text under 'document'.
+                # NOTE: Sequence is read purely to build the filename before verification.
                 document = data.get("document", {})
                 
                 seq = document.get("sequence", 0)

@@ -1,4 +1,4 @@
-﻿import unittest
+import unittest
 import sys
 import os
 from datetime import date, timedelta
@@ -92,5 +92,89 @@ class TestTenSessionRegression(unittest.TestCase):
                 self.assertTrue(any("re-entry blocked" in note for note in res["holds"]))
                 self.assertNotIn("XLE", account["positions"])
 
+
+    def test_held_positions_identical_to_targets(self):
+        """
+        Start the account with two positions and some cash, then run a document whose target set is identical 
+        to what is held. The correct result is zero orders and two hold lines reading 'already held, no maintenance rebalancing'.
+        """
+        account = {
+            "cash_usd": 5000.0,
+            "positions": {
+                "XLK": {"shares": 25.0},
+                "XLF": {"shares": 50.0}
+            },
+            "sold_today": []
+        }
+        
+        quotes = {
+            "XLK": 100.0,
+            "XLF": 50.0
+        }
+        
+        document = {
+            "constraints": {
+                "max_positions": 4,
+                "entry_weight_pct": 25.0,
+                "entry_weight_basis": "current_equity",
+                "position_weight_cap_pct": None,
+                "maintenance_rebalancing": "none",
+                "same_session_reentry": "blocked"
+            },
+            "targets": {
+                "positions": {"XLK": 25.0, "XLF": 25.0}
+            }
+        }
+        
+        res = compute_orders(document, account, quotes, date(2026, 8, 1))
+        
+        self.assertEqual(len(res["orders"]), 0)
+        
+        # Check hold lines
+        xlk_hold = next((h for h in res["holds"] if "XLK" in h), "")
+        xlf_hold = next((h for h in res["holds"] if "XLF" in h), "")
+        
+        self.assertTrue("already held, no maintenance rebalancing" in xlk_hold.lower())
+        self.assertTrue("already held, no maintenance rebalancing" in xlf_hold.lower())
+
+    def test_held_position_not_in_targets_liquidated(self):
+        """
+        Account holds a symbol the document does not mention. The correct result is a single sell.
+        """
+        account = {
+            "cash_usd": 5000.0,
+            "positions": {
+                "TSLA": {"shares": 10.0}
+            },
+            "sold_today": []
+        }
+        
+        quotes = {
+            "TSLA": 200.0,
+            "XLK": 100.0
+        }
+        
+        document = {
+            "constraints": {
+                "max_positions": 4,
+                "entry_weight_pct": 25.0,
+                "entry_weight_basis": "current_equity",
+                "position_weight_cap_pct": None,
+                "maintenance_rebalancing": "none",
+                "same_session_reentry": "blocked"
+            },
+            "targets": {
+                "positions": {}
+            }
+        }
+        
+        res = compute_orders(document, account, quotes, date(2026, 8, 1))
+        
+        # Expect exactly 1 sell (TSLA) and no buys
+        self.assertEqual(len(res["orders"]), 1)
+        self.assertEqual(res["orders"][0]["side"], "SELL")
+        self.assertEqual(res["orders"][0]["symbol"], "TSLA")
+
 if __name__ == "__main__":
+
     unittest.main()

@@ -36,7 +36,7 @@ class Agent:
         with urllib.request.urlopen(req, timeout=5) as r:
             return json.loads(r.read())
 
-    def run_session(self, session, quotes, path=None, signed_doc=None):
+    def run_session(self, session, quote_fetcher, path=None, signed_doc=None):
         """One trading session. Returns a record of what happened and why."""
         rec = {"session": session, "subscriber": self.label, "orders": [],
                "holds": [], "notes": [], "outcome": None}
@@ -66,6 +66,23 @@ class Agent:
         rec["sequence"] = doc["sequence"]
         rec["regime"] = f"{doc['regime']['argus1_band']}/{doc['regime']['flowos_phase']}"
         rec["targets"] = doc["targets"]["positions"]
+        
+        account_snapshot = self.broker.snapshot({})
+        
+        symbols_needed = set(rec["targets"].keys())
+        symbols_needed.update(account_snapshot.get("positions", {}).keys())
+        
+        try:
+            quotes = quote_fetcher(list(symbols_needed))
+        except Exception as e:
+            # We catch specific QuoteUnavailableError but it's passed as Exception here if not imported
+            # Let's just catch Exception and if "quote unavailable" in str(e), record it.
+            if "quote unavailable" in str(e).lower():
+                rec["outcome"] = f"NO ACTION - {e}"
+                self.audit.append(rec)
+                return rec
+            else:
+                raise e
 
         account = self.broker.snapshot(quotes)
         account["position_opened"] = {k: date.fromisoformat(v)

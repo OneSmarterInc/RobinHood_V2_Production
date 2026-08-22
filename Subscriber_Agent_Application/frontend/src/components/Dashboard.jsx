@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, RefreshCw, Power, Server, FileJson, X, CheckCircle2, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Activity, RefreshCw, Power, Server, FileJson, X, CheckCircle2, Calendar, ChevronLeft, ChevronRight, Settings, Key, Briefcase, TrendingUp } from 'lucide-react';
 
 
 const CalendarModal = ({ token, onClose }) => {
@@ -135,6 +135,246 @@ const CalendarModal = ({ token, onClose }) => {
   );
 };
 
+
+
+const BrokerModal = ({ token, onClose, onBrokerSwitched }) => {
+  const [brokers, setBrokers] = useState({});
+  const [activeBroker, setActiveBroker] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [newBroker, setNewBroker] = useState({ id: "", type: "alpaca", label: "", api_key: "", api_secret: "", username: "", password: "", cash_usd: 50000 });
+  const [showAdd, setShowAdd] = useState(false);
+
+  const fetchBrokers = async () => {
+    try {
+      const res = await fetch('http://127.0.0.1:8001/api/brokers', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBrokers(data.brokers || {});
+        setActiveBroker(data.active || "");
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    fetchBrokers();
+  }, [token]);
+
+  const switchBroker = async (id) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`http://127.0.0.1:8001/api/brokers/active?broker_id=${id}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setActiveBroker(id);
+        if (onBrokerSwitched) onBrokerSwitched();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setLoading(false);
+  };
+
+  const addBroker = async () => {
+    try {
+      const res = await fetch('http://127.0.0.1:8001/api/brokers', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(newBroker)
+      });
+      if (res.ok) {
+        setShowAdd(false);
+        fetchBrokers();
+        setNewBroker({ id: "", type: "alpaca", label: "", api_key: "", api_secret: "", username: "", password: "", cash_usd: 50000 });
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const getIconForType = (type) => {
+    switch(type) {
+      case 'alpaca': return <Activity size={18} color="#4f46e5" />;
+      case 'robinhood': return <TrendingUp size={18} color="#10b981" />;
+      default: return <Briefcase size={18} color="#64748b" />;
+    }
+  };
+
+  const inputStyle = {
+    display: 'block', 
+    width: '100%', 
+    padding: '10px 12px', 
+    border: '1px solid #cbd5e1', 
+    borderRadius: '6px', 
+    fontSize: '14px',
+    outline: 'none',
+    boxSizing: 'border-box'
+  };
+
+  const labelStyle = {
+    display: 'block',
+    fontSize: '13px',
+    fontWeight: '500',
+    color: '#475569',
+    marginBottom: '6px'
+  };
+
+  const formGroup = { marginBottom: '16px' };
+
+  return (
+    <div className="modal-overlay" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(6px)', zIndex: 1000}}>
+      <div style={{background: '#ffffff', borderRadius: '16px', width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', fontFamily: 'Inter, system-ui, sans-serif'}}>
+        
+        {/* Header */}
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid #e2e8f0'}}>
+          <div>
+            <h3 style={{margin: 0, fontSize: '20px', fontWeight: '600', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <Settings size={22} color="#4f46e5"/> Broker Integrations
+            </h3>
+            <p style={{margin: '4px 0 0 0', fontSize: '13px', color: '#64748b'}}>Manage your connected brokerage accounts</p>
+          </div>
+          <button onClick={onClose} style={{background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b'}}>
+            <X size={18}/>
+          </button>
+        </div>
+        
+        <div style={{padding: '24px'}}>
+          {/* Connected Brokers List */}
+          <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+            {Object.entries(brokers).map(([id, b]) => (
+              <div key={id} style={{
+                padding: '20px', 
+                background: activeBroker === id ? '#f8fafc' : '#ffffff',
+                border: activeBroker === id ? '2px solid #4f46e5' : '1px solid #e2e8f0', 
+                borderRadius: '12px', 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                transition: 'all 0.2s ease',
+                boxShadow: activeBroker === id ? '0 4px 6px -1px rgba(79, 70, 229, 0.1)' : 'none'
+              }}>
+                <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
+                  <div style={{width: '48px', height: '48px', borderRadius: '12px', background: activeBroker === id ? '#e0e7ff' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                    {getIconForType(b.type)}
+                  </div>
+                  <div>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px'}}>
+                      <h4 style={{margin: 0, fontSize: '16px', fontWeight: '600', color: '#0f172a'}}>{b.label}</h4>
+                      {activeBroker === id && (
+                        <span style={{fontSize: '11px', fontWeight: '600', color: '#4f46e5', background: '#e0e7ff', padding: '2px 8px', borderRadius: '12px'}}>ACTIVE</span>
+                      )}
+                    </div>
+                    <div style={{fontSize: '13px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px'}}>
+                      <span style={{textTransform: 'capitalize', fontWeight: '500'}}>{b.type}</span> &bull; 
+                      <span style={{fontFamily: 'monospace'}}>{id}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <button 
+                  disabled={activeBroker === id || loading} 
+                  onClick={() => switchBroker(id)} 
+                  style={{
+                    padding: '8px 16px', 
+                    background: activeBroker === id ? '#ffffff' : '#f1f5f9', 
+                    color: activeBroker === id ? '#cbd5e1' : '#0f172a', 
+                    border: activeBroker === id ? '1px solid #e2e8f0' : 'none', 
+                    borderRadius: '8px', 
+                    cursor: activeBroker === id ? 'not-allowed' : 'pointer', 
+                    fontWeight: '600',
+                    fontSize: '13px',
+                    transition: 'all 0.2s ease'
+                  }}>
+                  {activeBroker === id ? 'Connected' : 'Connect'}
+                </button>
+              </div>
+            ))}
+          </div>
+          
+          {/* Add Broker Form */}
+          {showAdd ? (
+            <div style={{marginTop: '24px', padding: '24px', border: '1px solid #e2e8f0', borderRadius: '12px', background: '#f8fafc'}}>
+              <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px'}}>
+                <div style={{width: '32px', height: '32px', background: '#e0e7ff', color: '#4f46e5', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                  <Key size={16} />
+                </div>
+                <h4 style={{margin: 0, fontSize: '16px', fontWeight: '600'}}>Configure New Broker</h4>
+              </div>
+
+              <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px'}}>
+                <div style={formGroup}>
+                  <label style={labelStyle}>Connection ID</label>
+                  <input placeholder="e.g. alpaca_main" style={inputStyle} value={newBroker.id} onChange={e => setNewBroker({...newBroker, id: e.target.value})} />
+                </div>
+                <div style={formGroup}>
+                  <label style={labelStyle}>Provider</label>
+                  <select style={{...inputStyle, background: '#fff', cursor: 'pointer'}} value={newBroker.type} onChange={e => setNewBroker({...newBroker, type: e.target.value})}>
+                    <option value="alpaca">Alpaca (API)</option>
+                    <option value="robinhood">Robinhood</option>
+                    <option value="mock">Paper Simulator</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={formGroup}>
+                <label style={labelStyle}>Display Label</label>
+                <input placeholder="e.g. My Personal Alpaca" style={inputStyle} value={newBroker.label} onChange={e => setNewBroker({...newBroker, label: e.target.value})} />
+              </div>
+
+              <div style={{height: '1px', background: '#e2e8f0', margin: '20px 0'}}></div>
+
+              {newBroker.type === 'alpaca' && (
+                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+                  <div style={formGroup}>
+                    <label style={labelStyle}>API Key</label>
+                    <input placeholder="PK..." style={inputStyle} value={newBroker.api_key} onChange={e => setNewBroker({...newBroker, api_key: e.target.value})} />
+                  </div>
+                  <div style={formGroup}>
+                    <label style={labelStyle}>API Secret</label>
+                    <input placeholder="Secret Key" type="password" style={inputStyle} value={newBroker.api_secret} onChange={e => setNewBroker({...newBroker, api_secret: e.target.value})} />
+                  </div>
+                </div>
+              )}
+
+              {newBroker.type === 'robinhood' && (
+                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+                  <div style={formGroup}>
+                    <label style={labelStyle}>Username / Email</label>
+                    <input placeholder="user@example.com" style={inputStyle} value={newBroker.username} onChange={e => setNewBroker({...newBroker, username: e.target.value})} />
+                  </div>
+                  <div style={formGroup}>
+                    <label style={labelStyle}>Password</label>
+                    <input placeholder="••••••••" type="password" style={inputStyle} value={newBroker.password} onChange={e => setNewBroker({...newBroker, password: e.target.value})} />
+                  </div>
+                </div>
+              )}
+
+              <div style={{display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px'}}>
+                <button onClick={() => setShowAdd(false)} style={{padding: '10px 16px', background: 'transparent', color: '#64748b', border: '1px solid #cbd5e1', borderRadius: '8px', cursor: 'pointer', fontWeight: '500', fontSize: '14px'}}>
+                  Cancel
+                </button>
+                <button onClick={addBroker} style={{padding: '10px 20px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '500', fontSize: '14px', boxShadow: '0 2px 4px rgba(79, 70, 229, 0.2)'}}>
+                  Save Connection
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setShowAdd(true)} style={{marginTop: '24px', width: '100%', padding: '16px', background: '#f8fafc', border: '2px dashed #cbd5e1', borderRadius: '12px', cursor: 'pointer', fontWeight: '600', fontSize: '14px', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'all 0.2s ease'}}>
+              <span style={{fontSize: '20px', display: 'flex'}}>+</span> Add New Broker Connection
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 const Dashboard = ({ token, onLogout }) => {
   const [data, setData] = useState({
     status: 'SYSTEM ACTIVE',
@@ -145,6 +385,7 @@ const Dashboard = ({ token, onLogout }) => {
   const [latestTargetFile, setLatestTargetFile] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [showBrokerModal, setShowBrokerModal] = useState(false);
   const [markedDone, setMarkedDone] = useState(false);
 
   const fetchStatus = async () => {
@@ -214,6 +455,9 @@ const Dashboard = ({ token, onLogout }) => {
           <button className="btn-secondary" onClick={() => setShowCalendarModal(true)} style={{marginTop: '10px'}}>
             <Calendar size={16} /> Market Calendar
           </button>
+          <button className="btn-secondary" onClick={() => setShowBrokerModal(true)} style={{marginTop: '10px'}}>
+                <Settings size={16} /> Broker Setup
+              </button>
         </div>
 
         <div className="sidebar-footer">
@@ -333,6 +577,7 @@ const Dashboard = ({ token, onLogout }) => {
       </div>
 
       {/* JSON Viewer Modal */}
+      {showBrokerModal && <BrokerModal token={token} onClose={() => setShowBrokerModal(false)} onBrokerSwitched={fetchStatus} />}
       {showCalendarModal && <CalendarModal token={token} onClose={() => setShowCalendarModal(false)} />}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>

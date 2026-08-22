@@ -14,12 +14,11 @@ feature.
 from decimal import Decimal, ROUND_DOWN
 
 
-class LiveTradingRefused(Exception):
-    pass
+from .base import BaseBroker, LiveTradingRefused
 
-
-class MockBroker:
+class MockBroker(BaseBroker):
     def __init__(self, label, cash_usd, positions=None, opened=None, live=False):
+        super().__init__(label, live)
         if live:
             raise LiveTradingRefused(
                 "This adapter is a simulator. It has no credentials and cannot "

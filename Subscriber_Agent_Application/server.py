@@ -7,7 +7,9 @@ import threading
 
 # Core Logic imports
 from core.agent import Agent
-from core.broker_mock import MockBroker
+from core.quote_provider import fetch_previous_close_quotes
+from core.broker_manager import BrokerManager
+broker_manager = BrokerManager()
 from core.scheduler import BackgroundPoller
 from api.client import AuthClient
 
@@ -33,20 +35,6 @@ if os.path.exists(dist_dir):
     def serve_index():
         return FileResponse(os.path.join(dist_dir, "index.html"))
 
-def fetch_real_quotes(symbols):
-    import yfinance as yf
-    quotes = {}
-    for sym in symbols:
-        try:
-            ticker = yf.Ticker(sym)
-            df = ticker.history(period="1d")
-            if not df.empty:
-                quotes[sym] = float(df['Close'].iloc[-1])
-            else:
-                quotes[sym] = 100.00 # fallback
-        except:
-            quotes[sym] = 100.00
-    return quotes
 
 # Global State for the Desktop App (since it's a single-user local app)
 class AppState:
@@ -56,8 +44,7 @@ class AppState:
         self.logs = ["Waiting for automated sync..."]
         self.base_url = "http://127.0.0.1:8000/api/v1"
         self.pubkey_path = "../publisher_agent/feed/keys/publisher-2026-07.pub"
-        # Fetch real market data from broker/yahoo instead of hardcoding
-        self.quotes = fetch_real_quotes(["XLK", "XLV", "XLE", "XLF", "XLI", "SPY"])
+        
 
 state = AppState()
 
@@ -84,7 +71,7 @@ def login(req: LoginRequest):
     
     # Initialize Core Agent
     try:
-        broker = MockBroker("LiveAccount", cash_usd=50000.00)
+        broker = broker_manager.get_active_broker()
         state.agent = Agent("MyAccount", state.base_url, token, broker, state.pubkey_path, config={"entry_convention": "equal_weight"})
         
         # Start Poller
@@ -104,7 +91,7 @@ def login(req: LoginRequest):
                     raise ValueError("Missing effective_session in document")
                     
                 # Run the agent session (this triggers verification + execution)
-                result = state.agent.run_session(session_date, state.quotes, signed_doc=signed_doc)
+                result = state.agent.run_session(session_date, fetch_previous_close_quotes, signed_doc=signed_doc)
                 add_log(f"Verification & Execution: {result['outcome']}")
             except Exception as e:
                 add_log(f"Execution Error: {str(e)}")
@@ -130,7 +117,7 @@ def get_status(authorization: Optional[str] = Header(None)):
         
     return {
         "status": "SYSTEM ACTIVE",
-        "equity": float(state.agent.broker.equity(state.quotes)),
+        "equity": float(state.agent.broker.equity(fetch_previous_close_quotes)),
         "positions": {k: float(v) for k, v in state.agent.broker.positions.items()},
         "logs": state.logs[-20:], # Last 20 logs
         "latest_document": state.agent.latest_document
@@ -150,7 +137,7 @@ def force_sync(authorization: Optional[str] = Header(None)):
         if not session_date:
             raise ValueError("Missing effective_session in fetched document")
             
-        result = state.agent.run_session(session_date, state.quotes, signed_doc=data)
+        result = state.agent.run_session(session_date, fetch_previous_close_quotes, signed_doc=data)
         add_log(f"Verification & Execution: {result['outcome']}")
         
         # Save it for the UI to pick up as the latest file
@@ -199,6 +186,39 @@ def get_calendar(year: int, month: int, authorization: Optional[str] = Header(No
     except Exception as e:
         from fastapi import HTTPException
         raise HTTPException(status_code=500, detail=f"Calendar Error: {str(e)}")
+
+
+from pydantic import BaseModel
+class BrokerConfig(BaseModel):
+    id: str
+    type: str
+    label: str
+    api_key: str = ""
+    api_secret: str = ""
+    cash_usd: float = 50000.0
+
+@app.get("/api/brokers")
+def get_brokers(authorization: Optional[str] = Header(None)):
+    return {
+        "active": broker_manager.get_active_broker_id(),
+        "brokers": broker_manager.get_brokers()
+    }
+
+@app.post("/api/brokers")
+def add_broker(config: BrokerConfig, authorization: Optional[str] = Header(None)):
+    broker_manager.add_broker(config.id, config.dict(exclude={"id"}))
+    return {"status": "ok"}
+
+@app.post("/api/brokers/active")
+def set_active_broker(broker_id: str, authorization: Optional[str] = Header(None)):
+    success = broker_manager.set_active_broker(broker_id)
+    if success:
+        # Re-initialize agent with new broker if logged in
+        if state.agent:
+            state.agent.broker = broker_manager.get_active_broker()
+        return {"status": "ok"}
+    from fastapi import HTTPException
+    raise HTTPException(status_code=400, detail="Invalid broker ID")
 
 @app.get("/api/latest-target")
 def get_latest_target(authorization: Optional[str] = Header(None)):
