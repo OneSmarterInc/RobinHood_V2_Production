@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from AccessApp.models import OTPRecord
+from AccessApp.models import OTPRecord, Subscriber, SupportQuery
 from django.contrib.auth.models import User
 
 class RegisterInitSerializer(serializers.Serializer):
@@ -45,3 +45,20 @@ class RegisterCompleteSerializer(serializers.Serializer):
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
+
+
+class SubscriberSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    email = serializers.CharField(source='user.email', read_only=True)
+    plan_name = serializers.CharField(source='plan.name', read_only=True)
+
+    class Meta:
+        model = Subscriber
+        fields = ['id', 'username', 'email', 'status', 'plan_name', 'subscription_end_date', 'created_at']
+
+class SupportQuerySerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='subscriber.user.username', read_only=True)
+
+    class Meta:
+        model = SupportQuery
+        fields = ['id', 'username', 'subject', 'message', 'reply', 'status', 'created_at', 'updated_at']

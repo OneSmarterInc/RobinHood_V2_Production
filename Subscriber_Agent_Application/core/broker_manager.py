@@ -3,8 +3,9 @@ import os
 from .brokers.mock import MockBroker
 from .brokers.alpaca import AlpacaBroker
 from .brokers.robinhood import RobinhoodBroker
+from .brokers.tradier import TradierBroker
 
-CONFIG_FILE = "brokers.json"
+CONFIG_FILE = os.path.join(os.getcwd(), "brokers.json")
 
 class BrokerManager:
     def __init__(self, config_path=CONFIG_FILE):
@@ -63,6 +64,12 @@ class BrokerManager:
                 label=broker_data.get("label", "Robinhood"),
                 username=broker_data.get("username", ""),
                 password=broker_data.get("password", "")
+            )
+
+        elif b_type == "tradier":
+            return TradierBroker(
+                label=broker_data.get("label", "Tradier"),
+                access_token=broker_data.get("access_token", "")
             )
         # Add future brokers here (Zerodha, etc)
         return None

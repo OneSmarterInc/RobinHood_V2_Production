@@ -1,5 +1,7 @@
 from django.urls import path
 from .views import (
+    AdminRegisterAPIView, AdminLoginAPIView, StaffManagementAPIView,
+    AdminSubscriberListAPIView, AdminQueryListAPIView, AdminQueryReplyAPIView, SubscriberQueryAPIView,
     RegisterInitAPIView, RegisterCompleteAPIView, LoginAPIView,
     SubscriberRevokeAPIView, SubscriberActivateAPIView
 )
@@ -12,6 +14,16 @@ urlpatterns = [
 
 
     # Super Admin Endpoints
+    path('admin/register/', AdminRegisterAPIView.as_view(), name='admin-register'),
+    path('admin/login/', AdminLoginAPIView.as_view(), name='admin-login'),
+    path('admin/staff/', StaffManagementAPIView.as_view(), name='admin-staff'),
+    path('admin/staff/<int:staff_id>/', StaffManagementAPIView.as_view(), name='admin-staff-detail'),
+    path('admin/subscribers/', AdminSubscriberListAPIView.as_view(), name='admin-subscribers'),
+    path('admin/queries/', AdminQueryListAPIView.as_view(), name='admin-queries'),
+    path('admin/queries/<int:query_id>/reply/', AdminQueryReplyAPIView.as_view(), name='admin-query-reply'),
+    
+    path('subscriber/queries/', SubscriberQueryAPIView.as_view(), name='subscriber-queries'),
+    
     path('admin/subscribers/<int:user_id>/revoke/', SubscriberRevokeAPIView.as_view(), name='admin-revoke'),
     path('admin/subscribers/<int:user_id>/activate/', SubscriberActivateAPIView.as_view(), name='admin-activate'),
 ]

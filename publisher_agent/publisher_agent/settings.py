@@ -76,7 +76,9 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8001",
     "http://localhost:8001",
     "http://127.0.0.1:5173",
-    "http://localhost:5173"
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174"
 ]
 
 ROOT_URLCONF = 'publisher_agent.urls'
@@ -103,7 +105,7 @@ WSGI_APPLICATION = 'publisher_agent.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 
-# It is for sqlite database***************************************
+# # It is for sqlite database*******************************************
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.sqlite3',

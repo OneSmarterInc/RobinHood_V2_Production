@@ -26,7 +26,7 @@ class RegisterInitAPIView(APIView):
             otp_code = str(random.randint(100000, 999999))
             
             # Save to DB
-            OTPRecord.objects.create(email=email, username=username, otp=otp_code)
+            OTPRecord.objects.update_or_create(email=email, defaults={'username': username, 'otp': otp_code})
             
             # Send Email
             send_mail(
@@ -111,14 +111,14 @@ class LoginAPIView(APIView):
 
 from django.shortcuts import get_object_or_404
 from rest_framework.authentication import TokenAuthentication
-from .permissions import IsSuperAdmin
+from .permissions import IsSuperAdmin, IsManagerOrSuperAdmin, IsSupportOrManagerOrSuperAdmin
 
 class SubscriberRevokeAPIView(APIView):
     """
     Super Admin endpoint to revoke a user's subscription.
     """
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsSuperAdmin]
+    # authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsSuperAdmin]
 
     def post(self, request, user_id, *args, **kwargs):
         subscriber = get_object_or_404(Subscriber, user__id=user_id)
@@ -130,8 +130,8 @@ class SubscriberActivateAPIView(APIView):
     """
     Super Admin endpoint to reactivate a revoked user's subscription.
     """
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsSuperAdmin]
+    # authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsSuperAdmin]
 
     def post(self, request, user_id, *args, **kwargs):
         subscriber = get_object_or_404(Subscriber, user__id=user_id)
@@ -140,3 +140,147 @@ class SubscriberActivateAPIView(APIView):
         return Response({"message": f"User {subscriber.user.username}'s access has been ACTIVATED."}, status=status.HTTP_200_OK)
 
 
+
+
+from .serializers import SubscriberSerializer, SupportQuerySerializer
+from ..models import SupportQuery
+
+class AdminSubscriberListAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsManagerOrSuperAdmin]
+    # Should use IsAdminUser in production
+    def get(self, request, *args, **kwargs):
+        subscribers = Subscriber.objects.all().order_by('-created_at')
+        serializer = SubscriberSerializer(subscribers, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class AdminQueryListAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsSupportOrManagerOrSuperAdmin]
+    def get(self, request, *args, **kwargs):
+        queries = SupportQuery.objects.all().order_by('-created_at')
+        serializer = SupportQuerySerializer(queries, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class AdminQueryReplyAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsSupportOrManagerOrSuperAdmin]
+    def post(self, request, query_id, *args, **kwargs):
+        try:
+            query = SupportQuery.objects.get(id=query_id)
+        except SupportQuery.DoesNotExist:
+            return Response({"error": "Query not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        reply_text = request.data.get('reply')
+        if not reply_text:
+            return Response({"error": "Reply text is required."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        query.reply = reply_text
+        query.status = 'RESOLVED'
+        query.save()
+        return Response({"message": "Replied successfully."}, status=status.HTTP_200_OK)
+
+class SubscriberQueryAPIView(APIView):
+    def get(self, request, *args, **kwargs):
+        # We assume the username is passed in headers for testing (in prod use tokens)
+        username = request.headers.get('X-Username')
+        if not username:
+            return Response({"error": "Username header required."}, status=status.HTTP_401_UNAUTHORIZED)
+            
+        queries = SupportQuery.objects.filter(subscriber__user__username=username).order_by('-created_at')
+        serializer = SupportQuerySerializer(queries, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, *args, **kwargs):
+        username = request.headers.get('X-Username')
+        if not username:
+            return Response({"error": "Username header required."}, status=status.HTTP_401_UNAUTHORIZED)
+            
+        try:
+            subscriber = Subscriber.objects.get(user__username=username)
+        except Subscriber.DoesNotExist:
+            return Response({"error": "Subscriber not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        subject = request.data.get('subject')
+        message = request.data.get('message')
+        
+        query = SupportQuery.objects.create(
+            subscriber=subscriber,
+            subject=subject,
+            message=message
+        )
+        return Response({"message": "Query created successfully."}, status=status.HTTP_201_CREATED)
+
+
+from rest_framework.authtoken.models import Token
+from django.contrib.auth import authenticate
+
+class AdminRegisterAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        email = request.data.get('email')
+        
+        if User.objects.filter(username=username).exists():
+            return Response({"error": "Admin username already exists."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        user = User.objects.create_user(username=username, email=email, password=password)
+        user.is_staff = True
+        user.is_superuser = True
+        user.save()
+        
+        token, _ = Token.objects.get_or_create(user=user)
+        return Response({"token": token.key, "message": "Admin account created successfully!"}, status=status.HTTP_201_CREATED)
+
+class AdminLoginAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        user = authenticate(username=username, password=password)
+        
+        if user and user.is_staff:
+            token, _ = Token.objects.get_or_create(user=user)
+            role = "Support"
+            if user.is_superuser:
+                role = "SuperAdmin"
+            elif user.groups.filter(name='Manager').exists():
+                role = "Manager"
+            return Response({"token": token.key, "role": role}, status=status.HTTP_200_OK)
+        return Response({"error": "Invalid credentials or not an admin."}, status=status.HTTP_401_UNAUTHORIZED)
+
+from django.contrib.auth.models import Group
+class StaffManagementAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsSuperAdmin]
+
+    def get(self, request):
+        staff = User.objects.filter(is_staff=True, is_superuser=False)
+        data = []
+        for s in staff:
+            role = "Support"
+            if s.groups.filter(name='Manager').exists(): role = "Manager"
+            data.append({
+                "id": s.id, "username": s.username, "email": s.email, "role": role, "date_joined": s.date_joined
+            })
+        return Response(data)
+
+    def post(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        role = request.data.get('role')
+        
+        if User.objects.filter(username=username).exists():
+            return Response({"error": "Username taken."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        user = User.objects.create_user(username=username, password=password)
+        user.is_staff = True
+        user.save()
+        
+        group, _ = Group.objects.get_or_create(name=role)
+        user.groups.add(group)
+        
+        return Response({"message": "Staff created!"}, status=status.HTTP_201_CREATED)
+        
+    def delete(self, request, staff_id):
+        User.objects.filter(id=staff_id, is_superuser=False).delete()
+        return Response({"message": "Staff deleted."})

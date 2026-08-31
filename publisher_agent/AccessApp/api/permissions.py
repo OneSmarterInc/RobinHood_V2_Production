@@ -1,28 +1,26 @@
-from rest_framework import permissions
+from rest_framework.permissions import BasePermission
 
-class IsSuperAdmin(permissions.BasePermission):
-    """
-    Allows access only to superuser users.
-    """
+class IsSuperAdmin(BasePermission):
     def has_permission(self, request, view):
-        return bool(request.user and request.user.is_superuser)
+        return bool(request.user and request.user.is_authenticated and request.user.is_superuser)
 
-class IsActiveSubscriber(permissions.BasePermission):
-    """
-    Allows access only if the user has an ACTIVE subscriber profile.
-    """
-    message = "Your subscription has been revoked or expired. Please contact support."
-    
+class IsManagerOrSuperAdmin(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated: return False
+        if request.user.is_superuser: return True
+        return request.user.groups.filter(name='Manager').exists()
+
+class IsSupportOrManagerOrSuperAdmin(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated: return False
+        if request.user.is_superuser: return True
+        return request.user.groups.filter(name__in=['Manager', 'Support']).exists()
+
+class IsActiveSubscriber(BasePermission):
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
             return False
-            
         try:
-            # The Subscriber model is related to User via 'subscriber_profile'
-            # Note: We need to use the exact related_name defined in models.py
-            # wait, in the models.py the user one to one is named 'subscriber_profile' for Subscriber?
-            # Let's assume request.user.subscriber_profile
-            subscriber = request.user.subscriber_profile
-            return subscriber.is_valid()
+            return request.user.subscriber_profile.status == 'ACTIVE'
         except Exception:
             return False

@@ -108,3 +108,19 @@ class MaliciousActivityLog(models.Model):
 
     def __str__(self):
         return f"Breach by {self.subscriber.user.username} at {self.timestamp}"
+
+class SupportQuery(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('RESOLVED', 'Resolved'),
+    ]
+    subscriber = models.ForeignKey(Subscriber, on_delete=models.CASCADE, related_name='queries')
+    subject = models.CharField(max_length=200)
+    message = models.TextField()
+    reply = models.TextField(blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Query from {self.subscriber.user.username}: {self.subject}"

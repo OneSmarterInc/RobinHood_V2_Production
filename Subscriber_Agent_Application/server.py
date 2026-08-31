@@ -26,8 +26,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+import sys
+
 # Serve the compiled React Frontend
-dist_dir = os.path.join(os.path.dirname(__file__), "frontend", "dist")
+if getattr(sys, 'frozen', False):
+    dist_dir = os.path.join(sys._MEIPASS, "frontend", "dist")
+else:
+    dist_dir = os.path.join(os.path.dirname(__file__), "frontend", "dist")
+
 if os.path.exists(dist_dir):
     app.mount("/assets", StaticFiles(directory=os.path.join(dist_dir, "assets")), name="assets")
     
@@ -43,7 +49,10 @@ class AppState:
         self.poller = None
         self.logs = ["Waiting for automated sync..."]
         self.base_url = "http://127.0.0.1:8000/api/v1"
-        self.pubkey_path = "../publisher_agent/feed/keys/publisher-2026-07.pub"
+        if getattr(sys, 'frozen', False):
+            self.pubkey_path = os.path.join(sys._MEIPASS, "keys", "publisher-2026-07.pub")
+        else:
+            self.pubkey_path = os.path.join(os.path.dirname(__file__), "keys", "publisher-2026-07.pub")
         
 
 state = AppState()
@@ -91,7 +100,7 @@ def login(req: LoginRequest):
                     raise ValueError("Missing effective_session in document")
                     
                 # Run the agent session (this triggers verification + execution)
-                result = state.agent.run_session(session_date, fetch_previous_close_quotes, signed_doc=signed_doc)
+                result = state.agent.run_session(session_date, get_cached_quotes, signed_doc=signed_doc)
                 add_log(f"Verification & Execution: {result['outcome']}")
             except Exception as e:
                 add_log(f"Execution Error: {str(e)}")
@@ -110,15 +119,33 @@ def login(req: LoginRequest):
         
     return {"token": token}
 
+quote_cache = {}
+
+def get_cached_quotes(symbols):
+    missing = [s for s in symbols if s not in quote_cache]
+    if missing:
+        new_quotes = fetch_previous_close_quotes(missing)
+        quote_cache.update(new_quotes)
+    return {s: quote_cache.get(s, 0.0) for s in symbols}
+
 @app.get("/api/status")
 def get_status(authorization: Optional[str] = Header(None)):
     if not state.agent:
-        return {"status": "NOT INITIALIZED", "equity": 0, "positions": {}, "logs": state.logs}
+        return {"status": "NOT INITIALIZED", "equity": 0, "positions": {}, "logs": state.logs, "pending_orders": []}
         
+    snap = state.agent.broker.snapshot({})
+    symbols_held = list(snap.get("positions", {}).keys())
+    try:
+        quotes = get_cached_quotes(symbols_held)
+    except Exception:
+        quotes = {s: 0.0 for s in symbols_held} # Fallback if network fails during polling
+
     return {
         "status": "SYSTEM ACTIVE",
-        "equity": float(state.agent.broker.equity(fetch_previous_close_quotes)),
-        "positions": {k: float(v) for k, v in state.agent.broker.positions.items()},
+        "equity": float(state.agent.broker.equity(quotes)),
+        "positions": {k: float(v["shares"]) for k, v in snap.get("positions", {}).items()},
+        "recent_orders": getattr(state.agent, 'recent_orders', []),
+        "pending_orders": getattr(state.agent, "pending_orders", []),
         "logs": state.logs[-20:], # Last 20 logs
         "latest_document": state.agent.latest_document
     }
@@ -137,12 +164,12 @@ def force_sync(authorization: Optional[str] = Header(None)):
         if not session_date:
             raise ValueError("Missing effective_session in fetched document")
             
-        result = state.agent.run_session(session_date, fetch_previous_close_quotes, signed_doc=data)
+        result = state.agent.run_session(session_date, get_cached_quotes, signed_doc=data)
         add_log(f"Verification & Execution: {result['outcome']}")
         
         # Save it for the UI to pick up as the latest file
         import os, json
-        target_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "TargetPortfolio"))
+        target_dir = os.path.abspath(os.path.join(os.getcwd(), "TargetPortfolio"))
         os.makedirs(target_dir, exist_ok=True)
         formatted_date = session_date.replace("-", "_")
         file_path = os.path.join(target_dir, f"target_{formatted_date}.json")
@@ -222,7 +249,7 @@ def set_active_broker(broker_id: str, authorization: Optional[str] = Header(None
 
 @app.get("/api/latest-target")
 def get_latest_target(authorization: Optional[str] = Header(None)):
-    target_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "TargetPortfolio"))
+    target_dir = os.path.abspath(os.path.join(os.getcwd(), "TargetPortfolio"))
     if not os.path.exists(target_dir):
         return {"filename": None, "raw_json": None, "document": None}
         
@@ -259,3 +286,20 @@ def run_server():
     import contextlib
     with contextlib.suppress(ValueError):
         server.run()
+
+
+@app.post("/api/execute")
+def force_execute(authorization: Optional[str] = Header(None)):
+    if not state.agent:
+        raise HTTPException(status_code=400, detail="Agent not initialized")
+    
+    add_log("Manual Execution triggered...")
+    
+    try:
+        result = state.agent.execute_pending(get_cached_quotes)
+        add_log(f"Execution Output: {result['outcome']}")
+        return {"success": True, "outcome": result['outcome']}
+    except Exception as e:
+        err = f"Execution failed: {str(e)}"
+        add_log(err)
+        raise HTTPException(status_code=500, detail=err)

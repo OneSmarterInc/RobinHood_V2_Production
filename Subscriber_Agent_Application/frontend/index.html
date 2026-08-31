@@ -1,6 +1,16 @@
 <!doctype html>
 <html lang="en">
   <head>
+
+    <script>
+      window.addEventListener('error', function(e) {
+        document.body.innerHTML += '<div style="color:red; background:white; padding: 20px; position:absolute; top:0; left:0; z-index:9999; font-size:16px;"><b>Global Error:</b> ' + e.message + '<br>' + e.filename + ':' + e.lineno + '</div>';
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        document.body.innerHTML += '<div style="color:red; background:white; padding: 20px; position:absolute; top:0; left:0; z-index:9999; font-size:16px;"><b>Unhandled Rejection:</b> ' + e.reason + '</div>';
+      });
+    </script>
+
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />

@@ -61,9 +61,14 @@ celerybeat-schedule
 celerybeat.pid
 
 # Project specific auto-generated files / keys
-feed/
-keys/
-*.json
-
+feed/keys/*
+!feed/keys/*.pub
+keys/*
+!keys/*.pub
+!Subscriber_Agent_Application/keys/*.pub
+agent_state.json
+brokers.json
+accounts.json
+TargetPortfolio/
 timepass/
 PublisherAgentFrontend

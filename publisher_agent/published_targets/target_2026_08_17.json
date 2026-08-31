@@ -1,0 +1,61 @@
+{
+  "document": {
+    "schema_version": "1.0.0",
+    "model_id": "rotation-core",
+    "portfolio": {
+      "portfolio_id": "core",
+      "sleeve_allocation_pct": 100.0
+    },
+    "sequence": 6,
+    "published_at": "2026-08-17T04:42:30.264934+00:00",
+    "effective_session": "2026-08-17",
+    "valid_from": "2026-08-17T04:42:30.264934+00:00",
+    "valid_until": "2026-08-17T10:42:30.264934+00:00",
+    "liveness": {
+      "model_evaluated": true,
+      "evaluated_at": "2026-08-17T04:42:30.264934+00:00",
+      "next_expected_publish": "next_trading_day T09:15:00-04:00"
+    },
+    "execution_window": {
+      "start": "10:00:00-04:00",
+      "end": "10:30:00-04:00",
+      "entry": "randomized_within_window",
+      "publisher_executes": "last, from this document, no priority"
+    },
+    "regime": {
+      "argus1_band": "STRONG",
+      "flowos_phase": "EARLY"
+    },
+    "targets": {
+      "positions": {
+        "XLK": 25.0,
+        "XLF": 25.0
+      },
+      "cash_pct": 50.0
+    },
+    "constraints": {
+      "max_single_position_pct": 30.0,
+      "max_total_deployed_pct": 60.0,
+      "min_cash_floor_pct": 40.0,
+      "min_trade_notional_usd": 250.0,
+      "rebalance_band_bps": 200,
+      "max_rebalances_per_position_per_week": 1,
+      "pdt_guard": {
+        "equity_threshold_usd": 25000.0,
+        "below_threshold_mode": "min_hold_days",
+        "min_hold_days": 2
+      },
+      "fractional_shares": "allowed",
+      "on_insufficient_cash": "scale_pro_rata",
+      "on_unavailable_symbol": "skip_leg_hold_cash"
+    },
+    "rationale": "System determined STRONG regime. Executed fully systematic sector rotation logic."
+  },
+  "integrity": {
+    "canonicalization": "json.dumps(sort_keys=True, separators=(',',':'))",
+    "sha256": "5c3ead55ea6459dcd403c59a0e67500be0c08e38ae0c100ec8ba85b9fc650b7c",
+    "signature_alg": "Ed25519",
+    "signature": "3183749dd6e130495fcc7d52ddd341097c72b7fe6cb1645bd375e7d7db334f4583d8febe730f67d02a03541e98f31a7d72697f1fb196520c545839629336fe05",
+    "key_id": "publisher-2026-08"
+  }
+}

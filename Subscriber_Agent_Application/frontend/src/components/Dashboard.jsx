@@ -349,7 +349,7 @@ const BrokerModal = ({ token, onClose, onBrokerSwitched }) => {
                   </div>
                   <div style={formGroup}>
                     <label style={labelStyle}>Password</label>
-                    <input placeholder="••••••••" type="password" style={inputStyle} value={newBroker.password} onChange={e => setNewBroker({...newBroker, password: e.target.value})} />
+                    <input placeholder="ΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇó" type="password" style={inputStyle} value={newBroker.password} onChange={e => setNewBroker({...newBroker, password: e.target.value})} />
                   </div>
                 </div>
               )}
@@ -445,7 +445,7 @@ const Dashboard = ({ token, onLogout }) => {
           <div className="logo-box">
             <Activity className="accent-icon" size={24} />
           </div>
-          <h2>OS QUANT</h2>
+          <h2>One Smarter</h2>
         </div>
         
         <div className="sidebar-menu">
