@@ -23,6 +23,7 @@ exe = EXE(
     a.datas,
     [],
     name='main',
+    icon='app_icon.ico',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
