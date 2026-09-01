@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, MessageSquareText, ShieldAlert, LogOut, Hexagon } from 'lucide-react';
+import { LayoutDashboard, Users, MessageSquareText, ShieldAlert, LogOut, Hexagon, FileJson } from 'lucide-react';
 
 export default function Sidebar({ role }) {
   const navigate = useNavigate();
@@ -44,6 +44,12 @@ export default function Sidebar({ role }) {
         {(role === 'SuperAdmin' || role === 'Manager') && (
           <NavLink to="/subscribers" className={({isActive}) => isActive ? "nav-link-dark active" : "nav-link-dark"}>
             <Users size={18} /> Subscribers
+          </NavLink>
+        )}
+
+        {(role === 'SuperAdmin' || role === 'Manager') && (
+          <NavLink to="/publishing-history" className={({isActive}) => isActive ? "nav-link-dark active" : "nav-link-dark"}>
+            <FileJson size={18} /> Target History
           </NavLink>
         )}
 

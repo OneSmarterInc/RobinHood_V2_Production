@@ -3,7 +3,7 @@ from .views import (
     AdminRegisterAPIView, AdminLoginAPIView, StaffManagementAPIView,
     AdminSubscriberListAPIView, AdminQueryListAPIView, AdminQueryReplyAPIView, SubscriberQueryAPIView,
     RegisterInitAPIView, RegisterCompleteAPIView, LoginAPIView,
-    SubscriberRevokeAPIView, SubscriberActivateAPIView
+    SubscriberRevokeAPIView, SubscriberActivateAPIView, AdminPublishingHistoryAPIView
 )
 
 urlpatterns = [
@@ -19,6 +19,7 @@ urlpatterns = [
     path('admin/staff/', StaffManagementAPIView.as_view(), name='admin-staff'),
     path('admin/staff/<int:staff_id>/', StaffManagementAPIView.as_view(), name='admin-staff-detail'),
     path('admin/subscribers/', AdminSubscriberListAPIView.as_view(), name='admin-subscribers'),
+    path('admin/publishing-history/', AdminPublishingHistoryAPIView.as_view(), name='admin-publishing-history'),
     path('admin/queries/', AdminQueryListAPIView.as_view(), name='admin-queries'),
     path('admin/queries/<int:query_id>/reply/', AdminQueryReplyAPIView.as_view(), name='admin-query-reply'),
     
