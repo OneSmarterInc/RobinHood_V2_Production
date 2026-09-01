@@ -173,13 +173,17 @@ export default function RegisterPage() {
               {loading ? 'Creating Account...' : 'Complete Registration'}
             </button>
             
-            <div style={{ textAlign: 'center', marginTop: '16px' }}>
+            <div style={{ textAlign: 'center', marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <button type="button" onClick={handleRequestOTP} disabled={loading} style={{ background: 'none', border: 'none', color: '#4f46e5', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>
+                Didn't receive code? Resend OTP
+              </button>
               <button type="button" onClick={() => setStep(1)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '14px' }}>
                 Incorrect email? Change it here
               </button>
             </div>
             
-            {error && <div className="error-msg"><AlertCircle size={18} /> {error}</div>}
+            {error && <div className="error-msg" style={{ marginTop: '16px' }}><AlertCircle size={18} /> {error}</div>}
+            {success && <div className="success-msg" style={{ marginTop: '16px' }}><CheckCircle2 size={18} /> {success}</div>}
           </form>
         )}
       </div>
