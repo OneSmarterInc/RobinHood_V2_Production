@@ -29,13 +29,45 @@ class RegisterInitAPIView(APIView):
             OTPRecord.objects.update_or_create(email=email, defaults={'username': username, 'otp': otp_code})
             
             # Send Email
-            send_mail(
-                subject="Your SaaS Quant Engine OTP",
-                message=f"Hello {username},\n\nYour OTP for registration is: {otp_code}\n\nThis OTP will expire in 10 minutes.",
-                from_email="noreply@quantengine.com",
-                recipient_list=[email],
-                fail_silently=False,
-            )
+            # We are sending a beautiful SaaS-level HTML email directly to the user
+            from django.core.mail import EmailMultiAlternatives
+            from django.template.loader import render_to_string
+            
+            subject = "Your One Smarter Security Code"
+            text_content = f"Hello {username},\n\nYour OTP for registration is: {otp_code}\n\nThis OTP will expire in 10 minutes."
+            
+            html_content = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body {{ font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f3f4f6; padding: 40px 0; }}
+                    .container {{ max-width: 500px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 40px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; }}
+                    .logo {{ width: 50px; height: 50px; background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); border-radius: 12px; display: inline-block; margin-bottom: 20px; }}
+                    h1 {{ color: #111827; font-size: 24px; margin-bottom: 10px; font-weight: 700; }}
+                    p {{ color: #4b5563; font-size: 15px; line-height: 1.6; margin-bottom: 30px; }}
+                    .otp-box {{ background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; font-size: 32px; font-weight: 800; letter-spacing: 4px; color: #4f46e5; margin-bottom: 30px; }}
+                    .footer {{ color: #9ca3af; font-size: 13px; margin-top: 40px; border-top: 1px solid #e5e7eb; padding-top: 20px; }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="logo"></div>
+                    <h1>Verify your email address</h1>
+                    <p>Hello <strong>{username}</strong>,<br/>Thank you for choosing One Smarter. Please use the verification code below to complete your registration and download the <strong>Subscriber Trading Agent</strong>.</p>
+                    <div class="otp-box">{otp_code}</div>
+                    <p style="font-size: 13px;">This code will securely expire in 10 minutes.<br/>After verification, you will be able to download and run the automated trading agent.</p>
+                    <div class="footer">
+                        © 2026 One Smarter Inc.<br/>All rights reserved.
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
+            
+            msg = EmailMultiAlternatives(subject, text_content, "One Smarter <marcocompany630@gmail.com>", [email])
+            msg.attach_alternative(html_content, "text/html")
+            msg.send(fail_silently=False)
             
             return Response({"message": f"OTP sent successfully to {email}"}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -120,8 +152,8 @@ class SubscriberRevokeAPIView(APIView):
     # authentication_classes = [TokenAuthentication]
     # permission_classes = [IsSuperAdmin]
 
-    def post(self, request, user_id, *args, **kwargs):
-        subscriber = get_object_or_404(Subscriber, user__id=user_id)
+    def post(self, request, subscriber_id, *args, **kwargs):
+        subscriber = get_object_or_404(Subscriber, id=subscriber_id)
         subscriber.status = 'REVOKED'
         subscriber.save()
         return Response({"message": f"User {subscriber.user.username}'s access has been REVOKED."}, status=status.HTTP_200_OK)
@@ -133,8 +165,8 @@ class SubscriberActivateAPIView(APIView):
     # authentication_classes = [TokenAuthentication]
     # permission_classes = [IsSuperAdmin]
 
-    def post(self, request, user_id, *args, **kwargs):
-        subscriber = get_object_or_404(Subscriber, user__id=user_id)
+    def post(self, request, subscriber_id, *args, **kwargs):
+        subscriber = get_object_or_404(Subscriber, id=subscriber_id)
         subscriber.status = 'ACTIVE'
         subscriber.save()
         return Response({"message": f"User {subscriber.user.username}'s access has been ACTIVATED."}, status=status.HTTP_200_OK)

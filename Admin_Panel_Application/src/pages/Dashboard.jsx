@@ -29,7 +29,7 @@ export default function Dashboard() {
       {/* Welcome Banner */}
       <div style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)', borderRadius: '16px', padding: '32px 40px', color: 'white', marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.2)' }}>
         <div>
-          <h1 style={{ fontSize: '28px', fontWeight: '800', marginBottom: '8px' }}>Welcome back, Admin! 👋</h1>
+          <h1 style={{ fontSize: '28px', fontWeight: '800', marginBottom: '8px' }}>Welcome back, Admin!</h1>
           <p style={{ opacity: 0.9, fontSize: '15px', margin: 0 }}>Here's what's happening with the One Smarter platform today.</p>
         </div>
         <div style={{ background: 'rgba(255,255,255,0.2)', padding: '12px 24px', borderRadius: '12px', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', gap: '12px' }}>

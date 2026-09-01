@@ -24,6 +24,6 @@ urlpatterns = [
     
     path('subscriber/queries/', SubscriberQueryAPIView.as_view(), name='subscriber-queries'),
     
-    path('admin/subscribers/<int:user_id>/revoke/', SubscriberRevokeAPIView.as_view(), name='admin-revoke'),
-    path('admin/subscribers/<int:user_id>/activate/', SubscriberActivateAPIView.as_view(), name='admin-activate'),
+    path('admin/subscribers/<int:subscriber_id>/revoke/', SubscriberRevokeAPIView.as_view(), name='admin-revoke'),
+    path('admin/subscribers/<int:subscriber_id>/activate/', SubscriberActivateAPIView.as_view(), name='admin-activate'),
 ]

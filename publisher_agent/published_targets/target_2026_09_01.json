@@ -1,0 +1,53 @@
+{
+  "document": {
+    "schema_version": "1.0.0",
+    "model_id": "rotation-core",
+    "portfolio": {
+      "portfolio_id": "core",
+      "sleeve_allocation_pct": 100.0
+    },
+    "sequence": 6,
+    "published_at": "2026-09-01T08:13:35.932090+00:00",
+    "effective_session": "2026-09-01",
+    "valid_from": "2026-09-01T08:13:35.932090+00:00",
+    "valid_until": "2026-09-01T16:00:00-04:00",
+    "liveness": {
+      "model_evaluated": true,
+      "evaluated_at": "2026-09-01T08:13:35.932090+00:00",
+      "next_expected_publish": "2026-09-02T09:15:00-04:00"
+    },
+    "execution_window": {
+      "start": "10:00:00-04:00",
+      "end": "10:30:00-04:00",
+      "entry": "randomized_within_window",
+      "publisher_executes": "last, from this document, no priority"
+    },
+    "regime": {
+      "argus1_band": "STRONG",
+      "flowos_phase": "EARLY"
+    },
+    "targets": {
+      "positions": {
+        "XLK": 25.0,
+        "XLV": 25.0
+      },
+      "cash_pct": 50.0
+    },
+    "constraints": {
+      "max_positions": 4,
+      "entry_weight_pct": 25.0,
+      "entry_weight_basis": "current_equity",
+      "position_weight_cap_pct": null,
+      "maintenance_rebalancing": "none",
+      "same_session_reentry": "blocked"
+    },
+    "rationale": "System determined STRONG regime. Executed fully systematic sector rotation logic."
+  },
+  "integrity": {
+    "canonicalization": "json.dumps(sort_keys=True, separators=(',',':'))",
+    "sha256": "e730dc3dd8d0bbcb8d6ac25c01d16e8a094700445282e212d3efd24526788505",
+    "signature_alg": "Ed25519",
+    "signature": "7b114bcce8a8d92332681e06baf2a47d009874af2cf2a20bc4762963c70c17238088cd399239568cfe8d260b79f4fa868a4ab21d8addc8579d9d507d5ac88a03",
+    "key_id": "publisher-2026-08"
+  }
+}

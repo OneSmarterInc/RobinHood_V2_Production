@@ -27,6 +27,10 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg-color)
 .nav-link:hover, .nav-link.active { background: #f8fafc; color: var(--primary); }
 .nav-link.active { background: #e0e7ff; color: var(--primary); }
 
+.nav-link-dark { display: flex; align-items: center; gap: 14px; padding: 14px 16px; color: #94a3b8 !important; text-decoration: none !important; font-weight: 600; border-radius: 12px; transition: all 0.2s; }
+.nav-link-dark:hover { background: #1e293b !important; color: #f8fafc !important; text-decoration: none !important; }
+.nav-link-dark.active { background: #4f46e5 !important; color: #ffffff !important; box-shadow: 0 4px 12px rgba(79,70,229,0.4) !important; text-decoration: none !important; }
+
 .main-content { flex: 1; padding: 40px; overflow-y: auto; }
 .header { margin-bottom: 30px; }
 .header h1 { font-size: 28px; font-weight: 800; color: var(--text-main); margin-bottom: 8px; }

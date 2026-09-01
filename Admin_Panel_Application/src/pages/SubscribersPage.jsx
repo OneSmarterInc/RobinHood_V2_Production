@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { ShieldAlert, ShieldCheck, Search, Users, Activity, UserX, Mail } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, Search, Users, Activity, UserX, Mail, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function SubscribersPage() {
   const [subscribers, setSubscribers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   const fetchSubs = () => {
     axios.get('http://127.0.0.1:8000/api/v1/auth/admin/subscribers/', { headers: { Authorization: `Token ${localStorage.getItem('adminToken')}` } })
@@ -29,6 +31,12 @@ export default function SubscribersPage() {
     sub.username.toLowerCase().includes(searchTerm.toLowerCase()) || 
     sub.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredSubs.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredSubs.slice(indexOfFirstItem, indexOfLastItem);
 
   const totalUsers = subscribers.length;
   const activeUsers = subscribers.filter(s => s.status === 'ACTIVE').length;
@@ -69,7 +77,7 @@ export default function SubscribersPage() {
               type="text" 
               placeholder="Search by username or email..." 
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
               style={{ width: '100%', padding: '10px 10px 10px 40px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none', fontFamily: 'inherit', fontSize: '14px', transition: 'border-color 0.2s, box-shadow 0.2s' }}
               onFocus={(e) => { e.target.style.borderColor = 'var(--primary)'; e.target.style.boxShadow = '0 0 0 3px rgba(79, 70, 229, 0.1)'; }}
               onBlur={(e) => { e.target.style.borderColor = 'var(--border-color)'; e.target.style.boxShadow = 'none'; }}
@@ -89,8 +97,8 @@ export default function SubscribersPage() {
             </thead>
             <tbody>
               {loading ? <tr><td colSpan="4" style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}><Activity className="animate-spin" style={{ margin: '0 auto', marginBottom: '10px', animation: 'spin 1s linear infinite' }} /> Loading subscribers...</td></tr> : 
-                filteredSubs.length === 0 ? <tr><td colSpan="4" style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}><Users size={32} style={{ margin: '0 auto', marginBottom: '12px', opacity: 0.5 }} /> No users found matching your search.</td></tr> :
-                filteredSubs.map(sub => (
+                currentItems.length === 0 ? <tr><td colSpan="4" style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}><Users size={32} style={{ margin: '0 auto', marginBottom: '12px', opacity: 0.5 }} /> No users found matching your search.</td></tr> :
+                currentItems.map(sub => (
                 <tr key={sub.id} style={{ transition: 'background-color 0.2s' }}>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -129,6 +137,35 @@ export default function SubscribersPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Footer */}
+        {!loading && filteredSubs.length > 0 && (
+          <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', borderRadius: '0 0 16px 16px' }}>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+              Showing <strong>{indexOfFirstItem + 1}</strong> to <strong>{Math.min(indexOfLastItem, filteredSubs.length)}</strong> of <strong>{filteredSubs.length}</strong> users
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
+                disabled={currentPage === 1}
+                style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', background: currentPage === 1 ? '#f1f5f9' : 'white', color: currentPage === 1 ? '#94a3b8' : 'var(--text-main)', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px', transition: 'all 0.2s' }}
+                onMouseOver={e => {if(currentPage !== 1) e.currentTarget.style.background = '#f8fafc'}}
+                onMouseOut={e => {if(currentPage !== 1) e.currentTarget.style.background = 'white'}}
+              >
+                <ChevronLeft size={16} /> Previous
+              </button>
+              <button 
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} 
+                disabled={currentPage === totalPages || totalPages === 0}
+                style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', background: (currentPage === totalPages || totalPages === 0) ? '#f1f5f9' : 'white', color: (currentPage === totalPages || totalPages === 0) ? '#94a3b8' : 'var(--text-main)', cursor: (currentPage === totalPages || totalPages === 0) ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px', transition: 'all 0.2s' }}
+                onMouseOver={e => {if(currentPage !== totalPages && totalPages !== 0) e.currentTarget.style.background = '#f8fafc'}}
+                onMouseOut={e => {if(currentPage !== totalPages && totalPages !== 0) e.currentTarget.style.background = 'white'}}
+              >
+                Next <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
