@@ -161,6 +161,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [
+    ("targets", BASE_DIR / "published_targets"),
+]
 
 # CELERY CONFIGURATION
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
