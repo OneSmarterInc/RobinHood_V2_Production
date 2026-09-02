@@ -110,7 +110,7 @@ def login(req: LoginRequest):
             token, 
             on_new_target=handle_new_target, 
             on_error=lambda err: add_log(f"Poller Error: {err}"),
-            poll_interval=10
+            poll_interval=300
         )
         state.poller.start()
         

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, RefreshCw, Power, Server, FileJson, X, CheckCircle2, Calendar, ChevronLeft, ChevronRight, Settings, Key, Briefcase, TrendingUp } from 'lucide-react';
+import { Activity, RefreshCw, Power, Server, FileJson, X, CheckCircle2, Calendar, ChevronLeft, ChevronRight, Settings, Key, Briefcase, TrendingUp, MessageSquare } from 'lucide-react';
 
 
 const CalendarModal = ({ token, onClose }) => {
@@ -375,7 +375,9 @@ const BrokerModal = ({ token, onClose, onBrokerSwitched }) => {
 };
 
 
-const Dashboard = ({ token, onLogout }) => {
+import SupportModal from './SupportModal';
+
+const Dashboard = ({ token, username, onLogout }) => {
   const [data, setData] = useState({
     status: 'SYSTEM ACTIVE',
     logs: ['Waiting for automated sync...'],
@@ -386,6 +388,7 @@ const Dashboard = ({ token, onLogout }) => {
   const [showModal, setShowModal] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [showBrokerModal, setShowBrokerModal] = useState(false);
+  const [showSupportModal, setShowSupportModal] = useState(false);
   const [markedDone, setMarkedDone] = useState(false);
 
   const fetchStatus = async () => {
@@ -456,8 +459,11 @@ const Dashboard = ({ token, onLogout }) => {
             <Calendar size={16} /> Market Calendar
           </button>
           <button className="btn-secondary" onClick={() => setShowBrokerModal(true)} style={{marginTop: '10px'}}>
-                <Settings size={16} /> Broker Setup
-              </button>
+            <Settings size={16} /> Broker Setup
+          </button>
+          <button className="btn-secondary" onClick={() => setShowSupportModal(true)} style={{marginTop: '10px', background: '#3b82f6', color: 'white'}}>
+            <MessageSquare size={16} /> Support Tickets
+          </button>
         </div>
 
         <div className="sidebar-footer">
@@ -579,6 +585,7 @@ const Dashboard = ({ token, onLogout }) => {
       {/* JSON Viewer Modal */}
       {showBrokerModal && <BrokerModal token={token} onClose={() => setShowBrokerModal(false)} onBrokerSwitched={fetchStatus} />}
       {showCalendarModal && <CalendarModal token={token} onClose={() => setShowCalendarModal(false)} />}
+      {showSupportModal && <SupportModal username={username} onClose={() => setShowSupportModal(false)} />}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>

@@ -22,7 +22,7 @@ const Login = ({ onLogin, onBack }) => {
 
       const data = await response.json();
       if (response.ok && data.token) {
-        onLogin(data.token);
+        onLogin(data.token, username);
       } else {
         setError(data.detail || 'Authentication Failed');
       }

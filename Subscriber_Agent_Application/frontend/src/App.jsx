@@ -8,14 +8,17 @@ import './App.css';
 function App() {
   const [view, setView] = useState('landing');
   const [token, setToken] = useState(null);
+  const [username, setUsername] = useState(null);
 
-  const handleLogin = (authToken) => {
+  const handleLogin = (authToken, user) => {
     setToken(authToken);
+    setUsername(user);
     setView('dashboard');
   };
 
   const handleLogout = () => {
     setToken(null);
+    setUsername(null);
     setView('landing');
   };
 
@@ -24,7 +27,7 @@ function App() {
       {view === 'landing' && <Landing onEnter={() => setView('login')} onSecurity={() => setView('security')} />}
       {view === 'security' && <Security onBack={() => setView('landing')} />}
       {view === 'login' && <Login onLogin={handleLogin} onBack={() => setView('landing')} />}
-      {view === 'dashboard' && <Dashboard token={token} onLogout={handleLogout} />}
+      {view === 'dashboard' && <Dashboard token={token} username={username} onLogout={handleLogout} />}
     </div>
   );
 }
