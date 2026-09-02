@@ -186,13 +186,22 @@ class AdminSubscriberListAPIView(APIView):
         serializer = SubscriberSerializer(subscribers, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+from rest_framework.pagination import PageNumberPagination
+
+class AdminQueryPagination(PageNumberPagination):
+    page_size = 50
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
 class AdminQueryListAPIView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsSupportOrManagerOrSuperAdmin]
     def get(self, request, *args, **kwargs):
         queries = SupportQuery.objects.all().order_by('-created_at')
-        serializer = SupportQuerySerializer(queries, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        paginator = AdminQueryPagination()
+        paginated_queries = paginator.paginate_queryset(queries, request)
+        serializer = SupportQuerySerializer(paginated_queries, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 class AdminQueryReplyAPIView(APIView):
     authentication_classes = [TokenAuthentication]
