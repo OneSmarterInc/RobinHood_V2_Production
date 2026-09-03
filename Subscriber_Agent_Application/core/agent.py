@@ -55,10 +55,15 @@ class Agent:
         
         rec = {"session": session, "timestamp": datetime.now().isoformat()}
         try:
-            from datetime import timezone, timedelta
-            # Need to pass 'now' to verify. The document is evaluated against the session date at 10 AM EST.
-            # 10 AM EST is 14:00 UTC during daylight saving (which August is).
-            now_dt = datetime.fromisoformat(session).replace(hour=14, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
+            from datetime import timezone
+            import zoneinfo
+            
+            # The document is evaluated against the session date at 10 AM America/New_York time.
+            # Convert 10:00 AM NY time on the session date to UTC accurately, handling DST automatically.
+            ny_tz = zoneinfo.ZoneInfo("America/New_York")
+            session_dt = datetime.fromisoformat(session)
+            ny_time = datetime(session_dt.year, session_dt.month, session_dt.day, 10, 0, 0, tzinfo=ny_tz)
+            now_dt = ny_time.astimezone(timezone.utc)
             
             print(f"[{datetime.now().strftime('%H:%M:%S')}] [core/agent.py] INFO: Handoff to core/verify.py for cryptographic checks")
             

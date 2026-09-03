@@ -81,7 +81,21 @@ def login(req: LoginRequest):
     # Initialize Core Agent
     try:
         broker = broker_manager.get_active_broker()
-        state.agent = Agent("MyAccount", state.base_url, token, broker, state.pubkey_path, config={"entry_convention": "equal_weight"})
+        
+        # Load subscriber config
+        import json
+        import os
+        config_path = os.path.join(os.getcwd(), "subscriber_config.json")
+        subscriber_config = {"entry_convention": "equal_weight"} # fallback
+        if os.path.exists(config_path):
+            try:
+                with open(config_path, "r") as f:
+                    subscriber_config = json.load(f)
+            except Exception as e:
+                add_log(f"Config Load Error: {e}")
+                
+        state.agent = Agent("MyAccount", state.base_url, token, broker, state.pubkey_path, config=subscriber_config)
+
         
         # Start Poller
         if state.poller:
