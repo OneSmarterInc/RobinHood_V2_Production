@@ -65,7 +65,7 @@ class BackgroundPoller:
                 with open(file_path, "w") as f:
                     json.dump(data, f, indent=4)
                     
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] Downloaded new target ({file_name}) to {file_path}")
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] [core/scheduler.py] INFO: Downloaded new target sequence {seq} to local storage")
                 
                 # Trigger callback if set
                 if self.on_new_target:

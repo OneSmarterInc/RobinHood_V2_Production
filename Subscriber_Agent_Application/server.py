@@ -286,20 +286,3 @@ def run_server():
     import contextlib
     with contextlib.suppress(ValueError):
         server.run()
-
-
-@app.post("/api/execute")
-def force_execute(authorization: Optional[str] = Header(None)):
-    if not state.agent:
-        raise HTTPException(status_code=400, detail="Agent not initialized")
-    
-    add_log("Manual Execution triggered...")
-    
-    try:
-        result = state.agent.execute_pending(get_cached_quotes)
-        add_log(f"Execution Output: {result['outcome']}")
-        return {"success": True, "outcome": result['outcome']}
-    except Exception as e:
-        err = f"Execution failed: {str(e)}"
-        add_log(err)
-        raise HTTPException(status_code=500, detail=err)
