@@ -12,10 +12,13 @@ export default function Dashboard() {
       axios.get('http://127.0.0.1:8000/api/v1/auth/admin/subscribers/', { headers: { Authorization: `Token ${localStorage.getItem('adminToken')}` } }),
       axios.get('http://127.0.0.1:8000/api/v1/auth/admin/queries/', { headers: { Authorization: `Token ${localStorage.getItem('adminToken')}` } })
     ]).then(([subRes, queryRes]) => {
+      const subsArray = subRes.data.results || subRes.data;
+      const queriesArray = queryRes.data.results || queryRes.data;
+      
       setStats({
-        subs: subRes.data.length,
-        activeSubs: subRes.data.filter(s => s.status === 'ACTIVE').length,
-        queries: queryRes.data.filter(q => q.status === 'PENDING').length
+        subs: subsArray.length,
+        activeSubs: subsArray.filter(s => s.status === 'ACTIVE').length,
+        queries: queriesArray.filter(q => q.status === 'PENDING').length
       });
       setLoading(false);
     }).catch(err => {
