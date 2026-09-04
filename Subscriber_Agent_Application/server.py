@@ -86,13 +86,18 @@ def login(req: LoginRequest):
         import json
         import os
         config_path = os.path.join(os.getcwd(), "subscriber_config.json")
-        subscriber_config = {"entry_convention": "equal_weight"} # fallback
-        if os.path.exists(config_path):
-            try:
-                with open(config_path, "r") as f:
-                    subscriber_config = json.load(f)
-            except Exception as e:
-                add_log(f"Config Load Error: {e}")
+        
+        if not os.path.exists(config_path):
+            error_msg = "ERROR: subscriber_config.json is missing. Please run first_run_setup.py"
+            add_log(error_msg)
+            raise ValueError(error_msg)
+            
+        try:
+            with open(config_path, "r") as f:
+                subscriber_config = json.load(f)
+        except Exception as e:
+            add_log(f"Config Load Error: {e}")
+            raise
                 
         state.agent = Agent("MyAccount", state.base_url, token, broker, state.pubkey_path, config=subscriber_config)
 

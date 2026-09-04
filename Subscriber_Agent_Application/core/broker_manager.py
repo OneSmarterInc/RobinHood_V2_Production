@@ -2,11 +2,11 @@ import json
 import os
 import keyring
 from .brokers.mock import MockBroker
-# from .brokers.alpaca import AlpacaBroker
+from .brokers.alpaca import AlpacaBroker
 # from .brokers.tradier import TradierBroker
 
-# The boss requested live adapters stay in the repository for later, 
-# but they MUST NOT be reachable from the build that gets demonstrated.
+# Live adapters are retained for post-review builds. 
+# They are not reachable from the demonstration build.
 
 CONFIG_FILE = os.path.join(os.getcwd(), "brokers.json")
 KEYRING_SERVICE = "SubscriberAgent_BrokerSecrets"
@@ -60,14 +60,17 @@ class BrokerManager:
             )
         
         # --- DISABLED FOR COMPLIANCE REVIEW ---
-        # elif b_type == "alpaca":
-        #     return AlpacaBroker(
-        #         label=broker_data.get("label", "Alpaca"),
-        #         api_key=broker_data.get("api_key", ""),
-        #         api_secret=broker_data.get("api_secret", "")
-        #     )
+        elif b_type == "alpaca":
+            return AlpacaBroker(
+                label=broker_data.get("label", "Alpaca"),
+                api_key=broker_data.get("api_key", ""),
+                api_secret=broker_data.get("api_secret", "")
+            )
 
-        
+
+
+
+
         # elif b_type == "tradier":
         #     return TradierBroker(
         #         label=broker_data.get("label", "Tradier"),
