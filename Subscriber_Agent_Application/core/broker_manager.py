@@ -60,17 +60,12 @@ class BrokerManager:
             )
         
         # --- DISABLED FOR COMPLIANCE REVIEW ---
-        elif b_type == "alpaca":
-            return AlpacaBroker(
-                label=broker_data.get("label", "Alpaca"),
-                api_key=broker_data.get("api_key", ""),
-                api_secret=broker_data.get("api_secret", "")
-            )
-
-
-
-
-
+        # elif b_type == "alpaca":
+        #     return AlpacaBroker(
+        #         label=broker_data.get("label", "Alpaca"),
+        #         api_key=broker_data.get("api_key", ""),
+        #         api_secret=broker_data.get("api_secret", "")
+        #     )
         # elif b_type == "tradier":
         #     return TradierBroker(
         #         label=broker_data.get("label", "Tradier"),

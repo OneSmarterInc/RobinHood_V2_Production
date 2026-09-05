@@ -62,8 +62,7 @@ class Agent:
             # Convert 10:00 AM NY time on the session date to UTC accurately, handling DST automatically.
             ny_tz = zoneinfo.ZoneInfo("America/New_York")
             session_dt = datetime.fromisoformat(session)
-            ny_time = datetime(session_dt.year, session_dt.month, session_dt.day, 10, 0, 0, tzinfo=ny_tz)
-            now_dt = ny_time.astimezone(timezone.utc)
+            now_dt = datetime.now(timezone.utc)
             
             print(f"[{datetime.now().strftime('%H:%M:%S')}] [core/agent.py] INFO: Handoff to core/verify.py for cryptographic checks")
             
@@ -94,7 +93,8 @@ class Agent:
             rec["holds"] = result["holds"]
             rec["notes"] = result["notes"]
             
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] [core/agent.py] INFO: Handoff to core/brokers/alpaca.py for execution")
+            broker_module_path = self.broker.__class__.__module__.replace('.', '/') + '.py'
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] [core/agent.py] INFO: Handoff to {broker_module_path} for execution")
             fills = self.broker.submit(result["orders"], quotes, session)
             rec["orders"] = fills
             rec["equity_after"] = float(self.broker.equity(quotes))
